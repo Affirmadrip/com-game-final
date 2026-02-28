@@ -1,11 +1,11 @@
 [gd_scene load_steps=8 format=3 uid="uid://v0vhn8u8rxfc"]
 
-[ext_resource type="Texture2D" uid="uid://b05yyh3wxj5h5" path="res://art/assets/rocky-tileset.png" id="1_8rem4"]
-[ext_resource type="Texture2D" uid="uid://cry215fd38o5c" path="res://art/assets/rocky-tileset-background.png" id="1_kewym"]
-[ext_resource type="Texture2D" uid="uid://mljg6xrdcvos" path="res://art/assets/rocky-tileset-2.png" id="2_gi7kc"]
+[ext_resource type="Texture2D" uid="uid://cry215fd38o5c" path="res://art/assets/rocky-tileset-background.png" id="1_u47qm"]
+[ext_resource type="Texture2D" uid="uid://b05yyh3wxj5h5" path="res://art/assets/rocky-tileset.png" id="2_e77qm"]
+[ext_resource type="Texture2D" uid="uid://mljg6xrdcvos" path="res://art/assets/rocky-tileset-2.png" id="3_kx1yv"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_gi7kc"]
-texture = ExtResource("1_8rem4")
+texture = ExtResource("2_e77qm")
 0:0/0 = 0
 0:1/0 = 0
 2:1/0 = 0
@@ -60,7 +60,7 @@ texture = ExtResource("1_8rem4")
 0:7/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_kewym"]
-texture = ExtResource("2_gi7kc")
+texture = ExtResource("3_kx1yv")
 0:0/0 = 0
 0:1/0 = 0
 2:1/0 = 0
@@ -264,7 +264,7 @@ sources/1 = SubResource("TileSetAtlasSource_kewym")
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_8rem4"]
 size = Vector2(20, 303.5)
 
-[node name="Stage" type="Node2D"]
+[node name="Stage1" type="Node2D"]
 
 [node name="ParallaxBackground" type="ParallaxBackground" parent="."]
 
@@ -273,7 +273,7 @@ motion_mirroring = Vector2(1134, 0)
 
 [node name="Sprite2D" type="Sprite2D" parent="ParallaxBackground/ParallaxLayer"]
 scale = Vector2(3.375, 3.375)
-texture = ExtResource("1_kewym")
+texture = ExtResource("1_u47qm")
 centered = false
 
 [node name="TileMap" type="TileMap" parent="."]
