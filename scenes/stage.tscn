@@ -1,9 +1,8 @@
-[gd_scene load_steps=9 format=3 uid="uid://v0vhn8u8rxfc"]
+[gd_scene load_steps=8 format=3 uid="uid://v0vhn8u8rxfc"]
 
 [ext_resource type="Texture2D" uid="uid://b05yyh3wxj5h5" path="res://art/assets/rocky-tileset.png" id="1_8rem4"]
 [ext_resource type="Texture2D" uid="uid://cry215fd38o5c" path="res://art/assets/rocky-tileset-background.png" id="1_kewym"]
 [ext_resource type="Texture2D" uid="uid://mljg6xrdcvos" path="res://art/assets/rocky-tileset-2.png" id="2_gi7kc"]
-[ext_resource type="PackedScene" uid="uid://cn2yk5yslmqg" path="res://scenes/player.tscn" id="4_6c5u0"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_gi7kc"]
 texture = ExtResource("1_8rem4")
@@ -292,6 +291,3 @@ position = Vector2(48, 443)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="Goal"]
 position = Vector2(6985, 150.25)
 shape = SubResource("RectangleShape2D_8rem4")
-
-[node name="Player" parent="." instance=ExtResource("4_6c5u0")]
-position = Vector2(29, 424)
