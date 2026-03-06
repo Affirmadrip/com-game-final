@@ -1,0 +1,16 @@
+63f7b34db8d8cdea90c76aacccf841ec
+::res://::1772462601
+icon.svg::CompressedTexture2D::8052742595061449424::1772462606::1772462748::1::::<><><>0<>0<>edc4ff38cab5213256e79ff9762fda46<>res://.godot/imported/icon.svg-218a8f2b3041327d8a5756f3a245f83b.ctex::
+README.md::TextFile::-1::1772462606::0::1::::<><><>0<>0<><>::
+::res://art/::1772462604
+::res://art/assets/::1772462604
+rocky-tileset-2.png::CompressedTexture2D::865533111180244322::1772462606::1772462748::1::::<><><>0<>0<>6121255d41d1273fe5203e929ffc4f0e<>res://.godot/imported/rocky-tileset-2.png-6a6ee875f5b46bc7b803822d62119490.ctex::
+rocky-tileset-background.png::CompressedTexture2D::6017284148375973406::1772462606::1772462748::1::::<><><>0<>0<>4aef527ccb5539025fa25c06acb2adac<>res://.godot/imported/rocky-tileset-background.png-600a549f63d56d2f06616668ed11ba64.ctex::
+rocky-tileset.png::CompressedTexture2D::4204573586094494972::1772462606::1772462748::1::::<><><>0<>0<>d9adaee4ef80716be9187c6e71a0ddfd<>res://.godot/imported/rocky-tileset.png-2f2eded81afab509b28f9a1d3a6c8953.ctex::
+::res://art/assets/player/::1772462800
+mo_sprites.png::CompressedTexture2D::2168522085585772850::1772463308::1772463312::1::::<><><>0<>0<>b0024ba036341d888b1df65bde0fb219<>res://.godot/imported/mo_sprites.png-00ec153ebe3838624cf43bab7e1642c2.ctex::
+::res://scenes/::1772462604
+player.tscn::PackedScene::168897388629838798::1772466394::0::1::::<><><>0<>0<><>::uid://drqw5sblsnjkh::::res://Scripts/mo_player.gd<>uid://55pihwuq1kna::::res://art/assets/player/mo_sprites.png
+stage_1.tscn::PackedScene::1526863452391204576::1772466238::0::1::::<><><>0<>0<><>::uid://cry215fd38o5c::::res://art/assets/rocky-tileset-background.png<>uid://b05yyh3wxj5h5::::res://art/assets/rocky-tileset.png<>uid://mljg6xrdcvos::::res://art/assets/rocky-tileset-2.png<>uid://cn2yk5yslmqg::::res://scenes/player.tscn
+::res://Scripts/::1772464680
+mo_player.gd::GDScript::8386892732138291623::1772471158::0::1::::<>CharacterBody2D<><>0<>0<><>::
