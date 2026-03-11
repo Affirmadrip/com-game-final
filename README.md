@@ -1,1 +1,0 @@
-Galacta-Jumper: Mo!

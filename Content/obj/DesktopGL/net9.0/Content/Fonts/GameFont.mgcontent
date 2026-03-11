@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <SourceFile>D:/มหาลัย/ปี 3/เนื้อหาบทเรียน/Semester 2/Final 2/Computer Game Programming/Final/com-game-final/Content/Fonts/GameFont.spritefont</SourceFile>
+  <SourceTime>2026-03-11T21:06:33.7807985+07:00</SourceTime>
+  <DestFile>D:/มหาลัย/ปี 3/เนื้อหาบทเรียน/Semester 2/Final 2/Computer Game Programming/Final/com-game-final/Content/bin/DesktopGL/Content/Fonts/GameFont.xnb</DestFile>
+  <DestTime>2026-03-11T21:27:15.9388062+07:00</DestTime>
+  <Importer>FontDescriptionImporter</Importer>
+  <ImporterTime>2025-10-20T21:25:32+07:00</ImporterTime>
+  <Processor>FontDescriptionProcessor</Processor>
+  <ProcessorTime>2025-10-20T21:25:32+07:00</ProcessorTime>
+  <Dependencies />
+  <BuildAsset />
+  <BuildOutput />
+</PipelineBuildEvent>
