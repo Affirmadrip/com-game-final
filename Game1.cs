@@ -23,6 +23,9 @@ public class Game1 : Game
 
     private Matrix cameraTransform;
 
+    private Texture2D playerTexture;
+
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
@@ -54,6 +57,7 @@ public class Game1 : Game
 
         font = Content.Load<SpriteFont>("Fonts/GameFont");
         tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
+        playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
     }
 
     protected override void Update(GameTime gameTime)
@@ -117,8 +121,19 @@ public class Game1 : Game
         }
 
         // Temporary player
-        _spriteBatch.Draw(pixel, player.Bounds, Color.Green);
+        Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
+        Vector2 origin = new Vector2(16, 16); // centre of the 32×32 frame
 
+        if (player.getDashingState)
+        {
+            float angle = (float)Math.Atan2(player.getDashDirection.Y, player.getDashDirection.X);
+            _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect, Color.White, angle, origin, 1f, SpriteEffects.None, 0f);
+        }
+        else
+        {
+            SpriteEffects flip = player.FacingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+            _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect, Color.White, 0f, origin, 1f, flip, 0f);
+        }
         _spriteBatch.End();
 
         // UI

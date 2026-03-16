@@ -20,3 +20,10 @@
 /importer:TextureImporter
 /processor:TextureProcessor
 /build:Stage/monochrome_tilemap_transparent_packed.png
+
+#begin Player/mo_sprites.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/build:Player/mo_sprites.png
+
+
