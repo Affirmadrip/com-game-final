@@ -5,7 +5,7 @@ namespace GalactaJumperMo.Classes
 {
 
 
-    public class TestPlayer
+    public class Player
     {
         public Vector2 Position;
         private Vector2 velocity;

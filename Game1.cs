@@ -12,7 +12,7 @@ public class Game1 : Game
     private SpriteBatch _spriteBatch;
 
     private Stage stage;
-    private TestPlayer player;
+    private Player player;
 
     private Texture2D pixel;
     private Texture2D tilemap;
@@ -40,7 +40,7 @@ public class Game1 : Game
     {
         stage = new Stage();
 
-        player = new TestPlayer();
+        player = new Player();
         player.Position = stage.PlayerSpawn;
 
         cameraTransform = Matrix.Identity;
