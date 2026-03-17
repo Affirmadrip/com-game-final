@@ -17,14 +17,14 @@ public class Game1 : Game
     private Texture2D pixel;
     private Texture2D tilemap;
     private SpriteFont font;
+    private Texture2D playerTexture;
 
     private float timeLeft = 120f;
     private bool isGameOver = false;
+    private bool isPaused = false;
 
     private Matrix cameraTransform;
-
-    private Texture2D playerTexture;
-
+    private KeyboardState previousKeyboard;
 
     public Game1()
     {
@@ -67,10 +67,16 @@ public class Game1 : Game
         if (keyboard.IsKeyDown(Keys.Escape))
             Exit();
 
-        float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-        if (!isGameOver)
+        bool pJustPressed = keyboard.IsKeyDown(Keys.P) && !previousKeyboard.IsKeyDown(Keys.P);
+        if (pJustPressed && !isGameOver)
         {
+            isPaused = !isPaused;
+        }
+
+        if (!isGameOver && !isPaused)
+        {
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+
             player.Update(gameTime, stage);
 
             timeLeft -= dt;
@@ -80,7 +86,6 @@ public class Game1 : Game
                 isGameOver = true;
             }
 
-            // Visible platforms only. Everything else below is void.
             if (player.Position.Y > stage.VoidY)
             {
                 isGameOver = true;
@@ -98,6 +103,7 @@ public class Game1 : Game
             RestartStage();
         }
 
+        previousKeyboard = keyboard;
         base.Update(gameTime);
     }
 
@@ -105,24 +111,20 @@ public class Game1 : Game
     {
         GraphicsDevice.Clear(Color.Black);
 
-        // WORLD
         _spriteBatch.Begin(transformMatrix: cameraTransform, samplerState: SamplerState.PointClamp);
 
-        // Solid stage tiles
         foreach (TileInstance tile in stage.SolidTiles)
         {
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
         }
 
-        // Decorations (no collision)
         foreach (TileInstance tile in stage.DecorationTiles)
         {
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
         }
 
-        // Temporary player
         Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
-        Vector2 origin = new Vector2(16, 16); // centre of the 32×32 frame
+        Vector2 origin = new Vector2(16, 16);
 
         if (player.getDashingState)
         {
@@ -134,15 +136,20 @@ public class Game1 : Game
             SpriteEffects flip = player.FacingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect, Color.White, 0f, origin, 1f, flip, 0f);
         }
+
         _spriteBatch.End();
 
-        // UI
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
         Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
         _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
 
-        if (isGameOver)
+        if (isPaused)
+        {
+            _spriteBatch.DrawString(font, "PAUSED", new Vector2(20, 60), Color.Yellow);
+            _spriteBatch.DrawString(font, "Press P to Resume", new Vector2(20, 95), Color.White);
+        }
+        else if (isGameOver)
         {
             _spriteBatch.DrawString(font, "GAME OVER", new Vector2(20, 60), Color.Red);
             _spriteBatch.DrawString(font, "Press R to Retry", new Vector2(20, 95), Color.White);
@@ -160,6 +167,7 @@ public class Game1 : Game
 
         timeLeft = 120f;
         isGameOver = false;
+        isPaused = false;
         cameraTransform = Matrix.Identity;
     }
 }

@@ -63,9 +63,9 @@ namespace GalactaJumperMo.Classes
 
                 if (dx == 0 && dy == 0)
                 {
-                    if (FacingLeft) dx = -1f;
-                    else dx = +1f;
+                    dx = FacingLeft ? -1f : 1f;
                 }
+
                 dashDirection = Vector2.Normalize(new Vector2(dx, dy));
                 isDashing = true;
                 dashTimer = dashDuration;
@@ -90,13 +90,11 @@ namespace GalactaJumperMo.Classes
 
             prevKeyboard = currentKeyboard;
 
-
-            Rectangle oldBounds = Bounds;
-
             if (isDashing)
             {
                 dashTimer -= dt;
                 velocity = dashDirection * dashSpeed;
+
                 if (dashTimer <= 0f)
                 {
                     isDashing = false;
@@ -104,38 +102,59 @@ namespace GalactaJumperMo.Classes
                 }
             }
 
-            // Horizontal move
-            Position.X += velocity.X * dt;
-
-            // Vertical move
-            velocity.Y += gravity * dt;
-            Position.Y += velocity.Y * dt;
+            // gravity
+            if (!isDashing)
+                velocity.Y += gravity * dt;
 
             isOnGround = false;
-            Rectangle newBounds = Bounds;
+
+            // Horizontal Collision
+            Position.X += velocity.X * dt;
+            Rectangle boundsX = Bounds;
 
             foreach (Rectangle platform in stage.Platforms)
             {
-                if (!newBounds.Intersects(platform))
+                if (!boundsX.Intersects(platform))
                     continue;
 
-                // Landing from above
-                if (velocity.Y >= 0 && oldBounds.Bottom <= platform.Top + 6)
+                if (velocity.X > 0) // moving right
+                {
+                    Position.X = platform.Left - Bounds.Width;
+                }
+                else if (velocity.X < 0) // moving left
+                {
+                    Position.X = platform.Right;
+                }
+
+                velocity.X = 0;
+                boundsX = Bounds;
+            }
+
+            // Vertical collision
+            Position.Y += velocity.Y * dt;
+            Rectangle boundsY = Bounds;
+
+            foreach (Rectangle platform in stage.Platforms)
+            {
+                if (!boundsY.Intersects(platform))
+                    continue;
+
+                if (velocity.Y > 0) // falling
                 {
                     Position.Y = platform.Top - Bounds.Height;
                     velocity.Y = 0;
                     isOnGround = true;
-                    newBounds = Bounds;
                 }
-                // Hitting underside
-                else if (velocity.Y < 0 && oldBounds.Top >= platform.Bottom - 6)
+                else if (velocity.Y < 0) // jumping upward
                 {
                     Position.Y = platform.Bottom;
                     velocity.Y = 0;
-                    newBounds = Bounds;
                 }
+
+                boundsY = Bounds;
             }
-            //Animation Updates
+
+            // Animation Updates
             int newRow;
             if (isDashing)
             {

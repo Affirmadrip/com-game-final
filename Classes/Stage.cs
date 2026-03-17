@@ -32,7 +32,11 @@ namespace GalactaJumperMo.Classes
         private readonly Random rng = new Random(42);
 
         private readonly List<Rectangle> purpleTiles = new List<Rectangle>();
-        private readonly List<Rectangle> greenTiles = new List<Rectangle>();
+        private readonly List<Rectangle> blueTiles = new List<Rectangle>();
+
+        private readonly List<Rectangle> smallTopDecorTiles = new List<Rectangle>();
+        private readonly List<Rectangle> rootedDecorTiles = new List<Rectangle>();
+        private readonly List<Rectangle> undersideDecorTiles = new List<Rectangle>();
 
         public Stage()
         {
@@ -42,7 +46,6 @@ namespace GalactaJumperMo.Classes
 
         private void BuildTilePools()
         {
-            // olid small block
             for (int row = 0; row <= 3; row++)
             {
                 for (int col = 7; col <= 11; col++)
@@ -54,24 +57,78 @@ namespace GalactaJumperMo.Classes
             purpleTiles.Add(TileRect(4, 10));
             purpleTiles.Add(TileRect(4, 11));
 
-            // decoration
-            for (int row = 0; row <= 1; row++)
-            {
-                for (int col = 13; col <= 19; col++)
-                {
-                    greenTiles.Add(TileRect(row, col));
-                }
-            }
+            blueTiles.Add(TileRect(4, 7));
+            blueTiles.Add(TileRect(4, 8));
+            blueTiles.Add(TileRect(4, 9));
 
-            for (int col = 13; col <= 15; col++)
-            {
-                greenTiles.Add(TileRect(2, col));
-            }
+            blueTiles.Add(TileRect(11, 7));
+            blueTiles.Add(TileRect(11, 8));
+            blueTiles.Add(TileRect(11, 9));
+            blueTiles.Add(TileRect(12, 7));
+            blueTiles.Add(TileRect(12, 8));
+            blueTiles.Add(TileRect(12, 9));
+            blueTiles.Add(TileRect(13, 7));
+            blueTiles.Add(TileRect(13, 8));
+            blueTiles.Add(TileRect(13, 9));
+
+            smallTopDecorTiles.Add(TileRect(0, 15));
+            smallTopDecorTiles.Add(TileRect(0, 16));
+            smallTopDecorTiles.Add(TileRect(0, 17));
+            smallTopDecorTiles.Add(TileRect(0, 18));
+            smallTopDecorTiles.Add(TileRect(0, 19));
+            smallTopDecorTiles.Add(TileRect(1, 15));
+            smallTopDecorTiles.Add(TileRect(1, 16));
+            smallTopDecorTiles.Add(TileRect(1, 17));
+            smallTopDecorTiles.Add(TileRect(1, 18));
+            smallTopDecorTiles.Add(TileRect(1, 19));
+            smallTopDecorTiles.Add(TileRect(2, 15));
+
+            rootedDecorTiles.Add(TileRect(0, 13));
+            rootedDecorTiles.Add(TileRect(0, 14));
+            rootedDecorTiles.Add(TileRect(1, 13));
+            rootedDecorTiles.Add(TileRect(1, 14));
+            rootedDecorTiles.Add(TileRect(2, 13));
+            rootedDecorTiles.Add(TileRect(2, 14));
+
+            undersideDecorTiles.Add(TileRect(0, 18));
+            undersideDecorTiles.Add(TileRect(0, 19));
+            undersideDecorTiles.Add(TileRect(1, 18));
+            undersideDecorTiles.Add(TileRect(1, 19));
         }
 
         private Rectangle TileRect(int row, int col)
         {
             return new Rectangle(col * TileSize, row * TileSize, TileSize, TileSize);
+        }
+
+        private Rectangle RandomPurple()
+        {
+            return purpleTiles[rng.Next(purpleTiles.Count)];
+        }
+
+        private Rectangle RandomBlue()
+        {
+            return blueTiles[rng.Next(blueTiles.Count)];
+        }
+
+        private Rectangle RandomSmallTopDecor()
+        {
+            return smallTopDecorTiles[rng.Next(smallTopDecorTiles.Count)];
+        }
+
+        private Rectangle RandomRootedDecor()
+        {
+            return rootedDecorTiles[rng.Next(rootedDecorTiles.Count)];
+        }
+
+        private Rectangle RandomUndersideDecor()
+        {
+            return undersideDecorTiles[rng.Next(undersideDecorTiles.Count)];
+        }
+
+        private Rectangle RandomSolidTile()
+        {
+            return rng.NextDouble() < 0.65 ? RandomPurple() : RandomBlue();
         }
 
         private void GenerateStage()
@@ -86,9 +143,9 @@ namespace GalactaJumperMo.Classes
 
             AddInvisibleWall(-32, 0, 32, 2000);
 
-            // start
-            Rectangle startStyle = purpleTiles[rng.Next(purpleTiles.Count)];
+            Rectangle startStyle = RandomPurple();
             AddStyledBlockArea(0, groundY, 14, 2, startStyle);
+            AddDecorationsOnTop(0, groundY, 14);
             PlayerSpawn = new Vector2(48, groundY - 32);
 
             int x = 14 * tile;
@@ -108,30 +165,60 @@ namespace GalactaJumperMo.Classes
 
                 int groundLenTiles = rng.Next(minGroundLen, maxGroundLen + 1);
 
-                Rectangle sectionStyle = purpleTiles[rng.Next(purpleTiles.Count)];
+                Rectangle sectionStyle = RandomSolidTile();
                 AddStyledBlockArea(x, groundY, groundLenTiles, 2, sectionStyle);
-
                 AddDecorationsOnTop(x, groundY, groundLenTiles);
 
-                // floating platforms
+                if (rng.NextDouble() < 0.25)
+                {
+                    AddUndersideDecor(x, groundY, groundLenTiles);
+                }
+
                 int floatingCount = progress < 0.33f ? rng.Next(1, 3) : rng.Next(2, 4);
+
                 for (int i = 0; i < floatingCount; i++)
                 {
                     int widthTiles = rng.Next(3, progress < 0.66f ? 7 : 6);
-                    int px = x + rng.Next(1, Math.Max(2, groundLenTiles - widthTiles)) * tile;
+                    int px = x + rng.Next(1, Math.Max(2, groundLenTiles - widthTiles + 1)) * tile;
                     int py = groundY - rng.Next(progress < 0.33f ? 4 : 5, progress < 0.66f ? 8 : 10) * tile;
 
-                    Rectangle platformStyle = purpleTiles[rng.Next(purpleTiles.Count)];
-                    AddStyledBlockArea(px, py, widthTiles, 1, platformStyle);
+                    double typeRoll = rng.NextDouble();
+
+                    if (typeRoll < 0.50)
+                    {
+                        Rectangle platformStyle = RandomSolidTile();
+                        AddStyledBlockArea(px, py, widthTiles, 1, platformStyle);
+                        AddDecorationsOnTop(px, py, widthTiles);
+
+                        if (rng.NextDouble() < 0.35)
+                        {
+                            AddUndersideDecor(px, py, widthTiles);
+                        }
+                    }
+                    else if (typeRoll < 0.80)
+                    {
+                        Rectangle platformStyle = RandomSolidTile();
+                        AddStyledBlockArea(px, py, widthTiles, 2, platformStyle);
+
+                        if (rng.NextDouble() < 0.30)
+                        {
+                            AddUndersideDecor(px, py, widthTiles);
+                        }
+                    }
+                    else
+                    {
+                        AddBluePrefab3x3(px, py, rng.Next(0, 2) == 0 ? 4 : 11, 7);
+                    }
                 }
 
                 if (rng.NextDouble() < 0.25)
                 {
-                    int narrowX = x + rng.Next(2, Math.Max(3, groundLenTiles - 2)) * tile;
+                    int narrowX = x + rng.Next(2, Math.Max(3, groundLenTiles - 1)) * tile;
                     int narrowY = groundY - rng.Next(4, 7) * tile;
 
-                    Rectangle narrowStyle = purpleTiles[rng.Next(purpleTiles.Count)];
+                    Rectangle narrowStyle = RandomSolidTile();
                     AddStyledBlockArea(narrowX, narrowY, 2, 1, narrowStyle);
+                    AddDecorationsOnTop(narrowX, narrowY, 2);
                 }
 
                 if (rng.NextDouble() < 0.18)
@@ -147,14 +234,17 @@ namespace GalactaJumperMo.Classes
                 x += gapTiles * tile;
             }
 
-            Rectangle endStyle = purpleTiles[rng.Next(purpleTiles.Count)];
+            Rectangle endStyle = RandomSolidTile();
             AddStyledBlockArea(x, groundY, 18, 2, endStyle);
+            AddDecorationsOnTop(x, groundY, 18);
 
-            Rectangle endPlatform1 = purpleTiles[rng.Next(purpleTiles.Count)];
+            Rectangle endPlatform1 = RandomSolidTile();
             AddStyledBlockArea(x + 10 * TileSize, groundY - 5 * TileSize, 4, 1, endPlatform1);
+            AddDecorationsOnTop(x + 10 * TileSize, groundY - 5 * TileSize, 4);
 
-            Rectangle endPlatform2 = purpleTiles[rng.Next(purpleTiles.Count)];
+            Rectangle endPlatform2 = RandomSolidTile();
             AddStyledBlockArea(x + 16 * TileSize, groundY - 8 * TileSize, 3, 1, endPlatform2);
+            AddDecorationsOnTop(x + 16 * TileSize, groundY - 8 * TileSize, 3);
         }
 
         private void AddStyledBlockArea(int startX, int startY, int widthTiles, int heightTiles, Rectangle sourceStyle)
@@ -198,19 +288,46 @@ namespace GalactaJumperMo.Classes
 
         private void AddDecorationsOnTop(int startX, int groundY, int widthTiles)
         {
-            if (greenTiles.Count == 0) return;
+            if (widthTiles < 2) return;
+            if (smallTopDecorTiles.Count == 0 && rootedDecorTiles.Count == 0) return;
 
             int decorCount = Math.Max(1, widthTiles / 5);
 
             for (int i = 0; i < decorCount; i++)
             {
-                if (rng.NextDouble() < 0.55)
-                {
-                    int x = startX + rng.Next(1, Math.Max(2, widthTiles - 1)) * TileSize;
-                    int y = groundY - TileSize;
+                int x = startX + rng.Next(0, widthTiles) * TileSize;
 
-                    Rectangle src = greenTiles[rng.Next(greenTiles.Count)];
-                    Rectangle dest = new Rectangle(x, y, TileSize, TileSize);
+                if (rng.NextDouble() < 0.7)
+                {
+                    Rectangle src = RandomSmallTopDecor();
+                    Rectangle dest = new Rectangle(x, groundY - TileSize, TileSize, TileSize);
+                    DecorationTiles.Add(new TileInstance(src, dest, false));
+                }
+                else
+                {
+                    Rectangle src = RandomRootedDecor();
+                    Rectangle dest = new Rectangle(x, groundY - TileSize, TileSize, TileSize);
+                    DecorationTiles.Add(new TileInstance(src, dest, false));
+                }
+            }
+        }
+
+        private void AddUndersideDecor(int startX, int startY, int widthTiles)
+        {
+            if (undersideDecorTiles.Count == 0) return;
+
+            for (int col = 0; col < widthTiles; col++)
+            {
+                if (rng.NextDouble() < 0.45)
+                {
+                    Rectangle src = RandomUndersideDecor();
+
+                    Rectangle dest = new Rectangle(
+                        startX + col * TileSize,
+                        startY + TileSize,
+                        TileSize,
+                        TileSize
+                    );
 
                     DecorationTiles.Add(new TileInstance(src, dest, false));
                 }
