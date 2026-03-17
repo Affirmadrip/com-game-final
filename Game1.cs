@@ -98,7 +98,8 @@ public class Game1 : Game
             cameraTransform = Matrix.CreateTranslation(-cameraX, 0, 0);
         }
 
-        if (keyboard.IsKeyDown(Keys.R))
+        bool rJustPressed = keyboard.IsKeyDown(Keys.R) && !previousKeyboard.IsKeyDown(Keys.R);
+        if (rJustPressed && isGameOver)
         {
             RestartStage();
         }
