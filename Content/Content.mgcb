@@ -1,4 +1,5 @@
-#---------------------------------- Global Properties ----------------------------------#
+
+#----------------------------- Global Properties ----------------------------#
 
 /outputDir:bin/$(Platform)
 /intermediateDir:obj/$(Platform)
@@ -7,23 +8,51 @@
 /profile:Reach
 /compress:False
 
-#---------------------------------- References ----------------------------------#
+#-------------------------------- References --------------------------------#
 
-#---------------------------------- Content ----------------------------------#
+
+#---------------------------------- Content ---------------------------------#
+
+#begin Enemies/ghost_sprites.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Enemies/ghost_sprites.png
 
 #begin Fonts/GameFont.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
 /build:Fonts/GameFont.spritefont
-
-#begin Stage/monochrome_tilemap_transparent_packed.png
-/importer:TextureImporter
-/processor:TextureProcessor
-/build:Stage/monochrome_tilemap_transparent_packed.png
 
 #begin Player/mo_sprites.png
 /importer:TextureImporter
 /processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
 /build:Player/mo_sprites.png
 
+#begin Stage/monochrome_tilemap_transparent_packed.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Stage/monochrome_tilemap_transparent_packed.png
 
