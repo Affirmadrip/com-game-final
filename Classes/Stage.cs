@@ -33,14 +33,14 @@ namespace GalactaJumperMo.Classes
 
         // Difficulty / reach tuning
         private const int MAX_STEP_UP_TILES = 4;
-        private const int NORMAL_GAP_MIN = 2;
-        private const int NORMAL_GAP_MAX = 4;
+        private const int NORMAL_GAP_MIN = 3;
+        private const int NORMAL_GAP_MAX = 5;
 
         // Mandatory island bridge tuning
-        private const int ISLAND_GAP_TOTAL_MIN = 7;
-        private const int ISLAND_GAP_TOTAL_MAX = 8;
+        private const int ISLAND_GAP_TOTAL_MIN = 8;
+        private const int ISLAND_GAP_TOTAL_MAX = 9;
         private const int MAX_JUMP_TO_ISLAND_TILES = 4;
-        private const int MAX_ISLAND_HEIGHT_ABOVE_GROUND = 4;
+        private const int MAX_ISLAND_HEIGHT_ABOVE_GROUND = 5;
 
         private readonly List<Rectangle> purpleTiles = new List<Rectangle>();
         private readonly List<Rectangle> blueChunkTiles = new List<Rectangle>();
@@ -145,7 +145,7 @@ namespace GalactaJumperMo.Classes
 
             while (x < StageWidthPixels - 30 * tile)
             {
-                int widthTiles = rng.Next(5, 10);
+                int widthTiles = rng.Next(4, 8);
 
                 int nextGroundY = currentGroundY + rng.Next(-2, 3) * tile;
                 nextGroundY = Clamp(nextGroundY, 352, 432);
@@ -165,8 +165,10 @@ namespace GalactaJumperMo.Classes
                     BuildStepDownSection(x, nextGroundY, widthTiles, sectionTile);
                 else
                     BuildRaisedMiddleSection(x, nextGroundY, widthTiles, sectionTile);
+                
+                AddUpperMiniPlatforms(x, nextGroundY, widthTiles);
 
-                bool useIslandBridge = rng.NextDouble() < 0.45;
+                bool useIslandBridge = rng.NextDouble() < 0.65;
 
                 if (useIslandBridge)
                 {
@@ -303,6 +305,33 @@ namespace GalactaJumperMo.Classes
                 AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
             }
         }
+
+        private void AddUpperMiniPlatforms(int sectionX, int groundY, int sectionWidthTiles)
+        {
+            if (sectionWidthTiles < 4) return;
+
+            // Only some sections get these
+            if (rng.NextDouble() > 0.25) return;
+
+            int miniCount = rng.Next(1, 3); // 1 or 2 mini platforms
+
+            for (int i = 0; i < miniCount; i++)
+            {
+                int widthTiles = rng.Next(2, 5); // 2-4 blocks wide
+
+                if (sectionWidthTiles <= widthTiles + 1)
+                    continue;
+
+                int px = sectionX + rng.Next(1, sectionWidthTiles - widthTiles) * TileSize;
+
+                // Significant height, but still reachable
+                int py = groundY - rng.Next(4, 6) * TileSize;
+
+                Rectangle tileSrc = RandomIslandTile();
+                AddBlockArea(px, py, widthTiles, 1, tileSrc);
+                AddDecorationsOnTop(px, py, widthTiles);
+            }
+        }        
 
         private void AddBlockArea(int x, int y, int widthTiles, int heightTiles, Rectangle src)
         {
