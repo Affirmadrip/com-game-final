@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using GalactaJumperMo.Classes;
+
 
 namespace GalactaJumperMo;
 
@@ -14,6 +16,7 @@ public class Game1 : Game
     private Stage stage;
     private Player player;
 
+
     private Texture2D pixel;
     private Texture2D tilemap;
     private SpriteFont font;
@@ -24,6 +27,9 @@ public class Game1 : Game
     private Matrix cameraTransform;
 
     private Texture2D playerTexture;
+
+    private Texture2D enemyTexture;
+    private List<Enemy> enemies = new List<Enemy>();
 
 
     public Game1()
@@ -43,6 +49,9 @@ public class Game1 : Game
         player = new Player();
         player.Position = stage.PlayerSpawn;
 
+        enemies.Add(new Enemy(new Vector2(400, 400)));
+        enemies.Add(new Enemy(new Vector2(1600, 300)));
+
         cameraTransform = Matrix.Identity;
 
         base.Initialize();
@@ -58,6 +67,7 @@ public class Game1 : Game
         font = Content.Load<SpriteFont>("Fonts/GameFont");
         tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
+        enemyTexture = Content.Load<Texture2D>("Enemies/ghost_sprites");
     }
 
     protected override void Update(GameTime gameTime)
@@ -84,6 +94,24 @@ public class Game1 : Game
             if (player.Position.Y > stage.VoidY)
             {
                 isGameOver = true;
+            }
+            //Enemies update
+            for (int i = enemies.Count - 1; i >= 0; i--)
+            {
+                var enemy = enemies[i];
+                enemy.Update(gameTime, stage);
+
+                if (player.Bounds.Intersects(enemy.Bounds))
+                {
+                    if (player.getDashingState)
+                    {
+                        enemies.RemoveAt(i); 
+                    }
+                    else
+                    {
+                        isGameOver = true;
+                    }
+                }
             }
 
             float viewportWidth = GraphicsDevice.Viewport.Width;
@@ -118,6 +146,12 @@ public class Game1 : Game
         foreach (TileInstance tile in stage.DecorationTiles)
         {
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
+        }
+
+        //Enemies
+        foreach (var enemy in enemies)
+        {
+            enemy.Draw(_spriteBatch, enemyTexture);
         }
 
         // Temporary player
@@ -157,6 +191,10 @@ public class Game1 : Game
     {
         player.Position = stage.PlayerSpawn;
         player.ResetVelocity();
+
+        enemies.Clear();
+        enemies.Add(new Enemy(new Vector2(400, 400)));
+        enemies.Add(new Enemy(new Vector2(1600, 300)));
 
         timeLeft = 120f;
         isGameOver = false;
