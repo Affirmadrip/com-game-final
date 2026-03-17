@@ -16,7 +16,7 @@ namespace GalactaJumperMo.Classes
 
         private bool isOnGround = false;
 
-        // Animation Management
+        // animation management
         private int animRow;
         private int animFrame;
         private float animTimer;
@@ -28,7 +28,7 @@ namespace GalactaJumperMo.Classes
             new Rectangle((int)Position.X, (int)Position.Y, 32, 32);
 
 
-        //8 Directional Dashing
+        // 8-directional dashing
         public bool getDashingState => isDashing;
         public Vector2 getDashDirection => dashDirection;
         private KeyboardState prevKeyboard;
@@ -108,7 +108,7 @@ namespace GalactaJumperMo.Classes
 
             isOnGround = false;
 
-            // Horizontal Collision
+            // horizontal collision
             Position.X += velocity.X * dt;
             Rectangle boundsX = Bounds;
 
@@ -130,7 +130,7 @@ namespace GalactaJumperMo.Classes
                 boundsX = Bounds;
             }
 
-            // Vertical collision
+            // vertical collision
             Position.Y += velocity.Y * dt;
             Rectangle boundsY = Bounds;
 
@@ -154,7 +154,7 @@ namespace GalactaJumperMo.Classes
                 boundsY = Bounds;
             }
 
-            // Animation Updates
+            // animation updates
             int newRow;
             if (isDashing)
             {

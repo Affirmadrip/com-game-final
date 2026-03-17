@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -13,11 +14,13 @@ public class Game1 : Game
 
     private Stage stage;
     private Player player;
+    private List<Enemy> enemies;
 
     private Texture2D pixel;
     private Texture2D tilemap;
-    private SpriteFont font;
     private Texture2D playerTexture;
+    private Texture2D enemyTexture;
+    private SpriteFont font;
 
     private float timeLeft = 120f;
     private bool isGameOver = false;
@@ -38,13 +41,8 @@ public class Game1 : Game
 
     protected override void Initialize()
     {
-        stage = new Stage();
-
-        player = new Player();
-        player.Position = stage.PlayerSpawn;
-
+        BuildStageAndActors();
         cameraTransform = Matrix.Identity;
-
         base.Initialize();
     }
 
@@ -58,6 +56,7 @@ public class Game1 : Game
         font = Content.Load<SpriteFont>("Fonts/GameFont");
         tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
+        enemyTexture = Content.Load<Texture2D>("Enemies/ghost_sprites");
     }
 
     protected override void Update(GameTime gameTime)
@@ -78,6 +77,16 @@ public class Game1 : Game
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             player.Update(gameTime, stage);
+
+            foreach (Enemy enemy in enemies)
+            {
+                enemy.Update(gameTime, stage);
+
+                if (player.Bounds.Intersects(enemy.Bounds))
+                {
+                    isGameOver = true;
+                }
+            }
 
             timeLeft -= dt;
             if (timeLeft <= 0f)
@@ -124,6 +133,11 @@ public class Game1 : Game
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
         }
 
+        foreach (Enemy enemy in enemies)
+        {
+            enemy.Draw(_spriteBatch, enemyTexture);
+        }
+
         Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
         Vector2 origin = new Vector2(16, 16);
 
@@ -163,12 +177,26 @@ public class Game1 : Game
 
     private void RestartStage()
     {
-        player.Position = stage.PlayerSpawn;
-        player.ResetVelocity();
+        BuildStageAndActors();
 
         timeLeft = 120f;
         isGameOver = false;
         isPaused = false;
         cameraTransform = Matrix.Identity;
+    }
+
+    private void BuildStageAndActors()
+    {
+        stage = new Stage();
+
+        player = new Player();
+        player.Position = stage.PlayerSpawn;
+
+        enemies = new List<Enemy>();
+
+        foreach (Vector2 spawn in stage.EnemySpawns)
+        {
+            enemies.Add(new Enemy(spawn));
+        }
     }
 }

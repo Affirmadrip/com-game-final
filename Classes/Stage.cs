@@ -24,6 +24,8 @@ namespace GalactaJumperMo.Classes
         public List<TileInstance> SolidTiles = new List<TileInstance>();
         public List<TileInstance> DecorationTiles = new List<TileInstance>();
 
+        public List<Vector2> EnemySpawns = new List<Vector2>();
+
         public Vector2 PlayerSpawn;
         public int VoidY;
         public int TileSize = 16;
@@ -31,12 +33,12 @@ namespace GalactaJumperMo.Classes
 
         private readonly Random rng = new Random(42);
 
-        // Difficulty / reach tuning
+        // difficulty tuning
         private const int MAX_STEP_UP_TILES = 4;
         private const int NORMAL_GAP_MIN = 3;
         private const int NORMAL_GAP_MAX = 5;
 
-        // Mandatory island bridge tuning
+        // island bridge tuning
         private const int ISLAND_GAP_TOTAL_MIN = 8;
         private const int ISLAND_GAP_TOTAL_MAX = 9;
         private const int MAX_JUMP_TO_ISLAND_TILES = 4;
@@ -62,7 +64,7 @@ namespace GalactaJumperMo.Classes
 
         private void BuildTilePools()
         {
-            // Purple blocks: visually coherent for regular ground
+            // regular ground
             for (int row = 0; row <= 3; row++)
             {
                 for (int col = 7; col <= 11; col++)
@@ -73,7 +75,7 @@ namespace GalactaJumperMo.Classes
             purpleTiles.Add(TileRect(4, 10));
             purpleTiles.Add(TileRect(4, 11));
 
-            // Blue chunk style: better for island-style floating chunks
+            // island-style floating chunks
             blueChunkTiles.Add(TileRect(4, 7));
             blueChunkTiles.Add(TileRect(4, 8));
             blueChunkTiles.Add(TileRect(4, 9));
@@ -88,7 +90,7 @@ namespace GalactaJumperMo.Classes
             blueChunkTiles.Add(TileRect(13, 8));
             blueChunkTiles.Add(TileRect(13, 9));
 
-            // Top decorations only
+            // top decorations
             smallTopDecorTiles.Add(TileRect(0, 15));
             smallTopDecorTiles.Add(TileRect(0, 16));
             smallTopDecorTiles.Add(TileRect(0, 17));
@@ -104,7 +106,7 @@ namespace GalactaJumperMo.Classes
             rootedDecorTiles.Add(TileRect(2, 13));
             rootedDecorTiles.Add(TileRect(2, 14));
 
-            // Thin support pillars
+            // support pillars
             pillarTiles.Add(TileRect(0, 12));
             pillarTiles.Add(TileRect(1, 12));
             pillarTiles.Add(TileRect(2, 12));
@@ -135,7 +137,6 @@ namespace GalactaJumperMo.Classes
             int currentGroundY = 416;
             AddInvisibleWall(-32, 0, 32, 2000);
 
-            // Start
             Rectangle startTile = RandomGroundTile();
             AddBlockArea(0, currentGroundY, 10, 2, startTile);
             AddDecorationsOnTop(0, currentGroundY, 10);
@@ -166,6 +167,7 @@ namespace GalactaJumperMo.Classes
                 else
                     BuildRaisedMiddleSection(x, nextGroundY, widthTiles, sectionTile);
                 
+                TryAddEnemyOnPlatform(x, nextGroundY, widthTiles);
                 AddUpperMiniPlatforms(x, nextGroundY, widthTiles);
 
                 bool useIslandBridge = rng.NextDouble() < 0.65;
@@ -193,13 +195,13 @@ namespace GalactaJumperMo.Classes
                     int islandY = nextGroundY - rng.Next(1, MAX_ISLAND_HEIGHT_ABOVE_GROUND + 1) * tile;
                     int islandX = x + widthTiles * tile + leftJump * tile;
 
-                    // Standalone island in the gap
+                    // standalone island
                     Rectangle islandTile = RandomIslandTile();
                     int islandHeightTiles = rng.Next(1, 3); // 1 or 2 tall
                     AddBlockArea(islandX, islandY, islandWidthTiles, islandHeightTiles, islandTile);
                     AddDecorationsOnTop(islandX, islandY, islandWidthTiles);
 
-                    // Only some islands get a pillar into the void
+                    // some islands get a pillar into the void
                     if (rng.NextDouble() < 0.35)
                     {
                         int pillarStartY = islandY + islandHeightTiles * tile;
@@ -310,7 +312,6 @@ namespace GalactaJumperMo.Classes
         {
             if (sectionWidthTiles < 4) return;
 
-            // Only some sections get these
             if (rng.NextDouble() > 0.25) return;
 
             int miniCount = rng.Next(1, 3); // 1 or 2 mini platforms
@@ -324,7 +325,7 @@ namespace GalactaJumperMo.Classes
 
                 int px = sectionX + rng.Next(1, sectionWidthTiles - widthTiles) * TileSize;
 
-                // Significant height, but still reachable
+                // reachable height
                 int py = groundY - rng.Next(4, 6) * TileSize;
 
                 Rectangle tileSrc = RandomIslandTile();
@@ -332,6 +333,25 @@ namespace GalactaJumperMo.Classes
                 AddDecorationsOnTop(px, py, widthTiles);
             }
         }        
+
+        private void TryAddEnemyOnPlatform(int startX, int groundY, int widthTiles)
+        {
+            if (widthTiles < 4) return;
+
+            if (rng.NextDouble() > 0.35) return;
+
+            // keep enemy away from edges
+            int minOffset = 1;
+            int maxOffset = widthTiles - 2;
+            if (maxOffset < minOffset) return;
+
+            int tileOffset = rng.Next(minOffset, maxOffset + 1);
+
+            float enemyX = startX + tileOffset * TileSize;
+            float enemyY = groundY - 30; // fits the enemy landing logic, and hitbox
+
+            EnemySpawns.Add(new Vector2(enemyX, enemyY));
+        }
 
         private void AddBlockArea(int x, int y, int widthTiles, int heightTiles, Rectangle src)
         {
