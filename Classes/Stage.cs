@@ -31,22 +31,22 @@ namespace GalactaJumperMo.Classes
 
         private readonly Random rng = new Random(42);
 
-        // Safe but not too easy
+        // Difficulty / reach tuning
         private const int MAX_STEP_UP_TILES = 4;
-        private const int MAX_FLOAT_HEIGHT_TILES = 5;
-        private const int MIN_GAP_TILES = 2;
-        private const int MAX_GAP_TILES = 5;
+        private const int NORMAL_GAP_MIN = 2;
+        private const int NORMAL_GAP_MAX = 4;
 
-        // Solid themes
+        // Mandatory island bridge tuning
+        private const int ISLAND_GAP_TOTAL_MIN = 7;
+        private const int ISLAND_GAP_TOTAL_MAX = 8;
+        private const int MAX_JUMP_TO_ISLAND_TILES = 4;
+        private const int MAX_ISLAND_HEIGHT_ABOVE_GROUND = 4;
+
         private readonly List<Rectangle> purpleTiles = new List<Rectangle>();
-        private readonly List<Rectangle> blueTiles = new List<Rectangle>();
-        private readonly List<Rectangle> metalTiles = new List<Rectangle>();
-        private readonly List<Rectangle> panelTiles = new List<Rectangle>();
+        private readonly List<Rectangle> blueChunkTiles = new List<Rectangle>();
 
-        // Decoration tiles
         private readonly List<Rectangle> smallTopDecorTiles = new List<Rectangle>();
         private readonly List<Rectangle> rootedDecorTiles = new List<Rectangle>();
-        private readonly List<Rectangle> undersideDecorTiles = new List<Rectangle>();
         private readonly List<Rectangle> pillarTiles = new List<Rectangle>();
 
         public Stage()
@@ -62,7 +62,7 @@ namespace GalactaJumperMo.Classes
 
         private void BuildTilePools()
         {
-            // Purple pool
+            // Purple blocks: visually coherent for regular ground
             for (int row = 0; row <= 3; row++)
             {
                 for (int col = 7; col <= 11; col++)
@@ -73,30 +73,22 @@ namespace GalactaJumperMo.Classes
             purpleTiles.Add(TileRect(4, 10));
             purpleTiles.Add(TileRect(4, 11));
 
-            // Blue pool
-            blueTiles.Add(TileRect(4, 7));
-            blueTiles.Add(TileRect(4, 8));
-            blueTiles.Add(TileRect(4, 9));
-            blueTiles.Add(TileRect(11, 7));
-            blueTiles.Add(TileRect(11, 8));
-            blueTiles.Add(TileRect(11, 9));
-            blueTiles.Add(TileRect(12, 7));
-            blueTiles.Add(TileRect(12, 8));
-            blueTiles.Add(TileRect(12, 9));
-            blueTiles.Add(TileRect(13, 7));
-            blueTiles.Add(TileRect(13, 8));
-            blueTiles.Add(TileRect(13, 9));
+            // Blue chunk style: better for island-style floating chunks
+            blueChunkTiles.Add(TileRect(4, 7));
+            blueChunkTiles.Add(TileRect(4, 8));
+            blueChunkTiles.Add(TileRect(4, 9));
 
-            // Other solid-looking blocks
-            metalTiles.Add(TileRect(17, 10));
-            metalTiles.Add(TileRect(18, 10));
-            metalTiles.Add(TileRect(19, 10));
+            blueChunkTiles.Add(TileRect(11, 7));
+            blueChunkTiles.Add(TileRect(11, 8));
+            blueChunkTiles.Add(TileRect(11, 9));
+            blueChunkTiles.Add(TileRect(12, 7));
+            blueChunkTiles.Add(TileRect(12, 8));
+            blueChunkTiles.Add(TileRect(12, 9));
+            blueChunkTiles.Add(TileRect(13, 7));
+            blueChunkTiles.Add(TileRect(13, 8));
+            blueChunkTiles.Add(TileRect(13, 9));
 
-            panelTiles.Add(TileRect(17, 13));
-            panelTiles.Add(TileRect(18, 13));
-            panelTiles.Add(TileRect(19, 13));
-
-            // Top decorations
+            // Top decorations only
             smallTopDecorTiles.Add(TileRect(0, 15));
             smallTopDecorTiles.Add(TileRect(0, 16));
             smallTopDecorTiles.Add(TileRect(0, 17));
@@ -105,7 +97,6 @@ namespace GalactaJumperMo.Classes
             smallTopDecorTiles.Add(TileRect(1, 17));
             smallTopDecorTiles.Add(TileRect(2, 15));
 
-            // Rooted decorations
             rootedDecorTiles.Add(TileRect(0, 13));
             rootedDecorTiles.Add(TileRect(0, 14));
             rootedDecorTiles.Add(TileRect(1, 13));
@@ -113,13 +104,7 @@ namespace GalactaJumperMo.Classes
             rootedDecorTiles.Add(TileRect(2, 13));
             rootedDecorTiles.Add(TileRect(2, 14));
 
-            // Underside / hanging decorations
-            undersideDecorTiles.Add(TileRect(0, 18));
-            undersideDecorTiles.Add(TileRect(0, 19));
-            undersideDecorTiles.Add(TileRect(1, 18));
-            undersideDecorTiles.Add(TileRect(1, 19));
-
-            // Thin pillar / cable / chain-like visuals only
+            // Thin support pillars
             pillarTiles.Add(TileRect(0, 12));
             pillarTiles.Add(TileRect(1, 12));
             pillarTiles.Add(TileRect(2, 12));
@@ -131,24 +116,14 @@ namespace GalactaJumperMo.Classes
             return pool[rng.Next(pool.Count)];
         }
 
-        private int RandomTheme()
+        private Rectangle RandomGroundTile()
         {
-            int roll = rng.Next(100);
-            if (roll < 40) return 0; // purple
-            if (roll < 65) return 1; // blue
-            if (roll < 83) return 2; // metal
-            return 3;               // panel
+            return RandomFrom(purpleTiles);
         }
 
-        private Rectangle GetThemeTile(int theme)
+        private Rectangle RandomIslandTile()
         {
-            switch (theme)
-            {
-                case 0: return RandomFrom(purpleTiles);
-                case 1: return RandomFrom(blueTiles);
-                case 2: return RandomFrom(metalTiles);
-                default: return RandomFrom(panelTiles);
-            }
+            return RandomFrom(blueChunkTiles);
         }
 
         private void GenerateStage()
@@ -158,21 +133,19 @@ namespace GalactaJumperMo.Classes
             VoidY = 560;
 
             int currentGroundY = 416;
-
             AddInvisibleWall(-32, 0, 32, 2000);
 
             // Start
-            Rectangle startTile = GetThemeTile(0);
-            AddBlockArea(0, currentGroundY, 12, 2, startTile);
-            AddDecorationsOnTop(0, currentGroundY, 12);
+            Rectangle startTile = RandomGroundTile();
+            AddBlockArea(0, currentGroundY, 10, 2, startTile);
+            AddDecorationsOnTop(0, currentGroundY, 10);
             PlayerSpawn = new Vector2(48, currentGroundY - 32);
 
-            int x = 12 * tile;
+            int x = 10 * tile;
 
-            while (x < StageWidthPixels - 28 * tile)
+            while (x < StageWidthPixels - 30 * tile)
             {
-                int widthTiles = rng.Next(6, 11);
-                int gapTiles = rng.Next(MIN_GAP_TILES, MAX_GAP_TILES + 1);
+                int widthTiles = rng.Next(5, 10);
 
                 int nextGroundY = currentGroundY + rng.Next(-2, 3) * tile;
                 nextGroundY = Clamp(nextGroundY, 352, 432);
@@ -181,53 +154,74 @@ namespace GalactaJumperMo.Classes
                 if (riseTiles > MAX_STEP_UP_TILES)
                     nextGroundY = currentGroundY - MAX_STEP_UP_TILES * tile;
 
-                int theme = RandomTheme();
-                Rectangle sectionTile = GetThemeTile(theme);
+                Rectangle sectionTile = RandomGroundTile();
 
-                int shape = rng.Next(5);
+                int shapeRoll = rng.Next(100);
+                if (shapeRoll < 45)
+                    BuildFlatSection(x, nextGroundY, widthTiles, sectionTile);
+                else if (shapeRoll < 70)
+                    BuildStepUpSection(x, nextGroundY, widthTiles, sectionTile);
+                else if (shapeRoll < 88)
+                    BuildStepDownSection(x, nextGroundY, widthTiles, sectionTile);
+                else
+                    BuildRaisedMiddleSection(x, nextGroundY, widthTiles, sectionTile);
 
-                switch (shape)
+                bool useIslandBridge = rng.NextDouble() < 0.45;
+
+                if (useIslandBridge)
                 {
-                    case 0:
-                        BuildFlatSection(x, nextGroundY, widthTiles, sectionTile);
-                        break;
+                    int totalGapTiles = rng.Next(ISLAND_GAP_TOTAL_MIN, ISLAND_GAP_TOTAL_MAX + 1);
+                    int islandWidthTiles = rng.Next(3, 5); // 3-4 blocks wide
 
-                    case 1:
-                        BuildBlockStepUpSection(x, nextGroundY, widthTiles, sectionTile);
-                        break;
+                    int leftJump = rng.Next(3, MAX_JUMP_TO_ISLAND_TILES + 1);
+                    int rightJump = totalGapTiles - leftJump - islandWidthTiles;
 
-                    case 2:
-                        BuildBlockStepDownSection(x, nextGroundY, widthTiles, sectionTile);
-                        break;
+                    if (rightJump < 2)
+                    {
+                        rightJump = 2;
+                        leftJump = totalGapTiles - islandWidthTiles - rightJump;
+                    }
 
-                    case 3:
-                        BuildRaisedMiddleSection(x, nextGroundY, widthTiles, sectionTile);
-                        break;
+                    if (leftJump < 2)
+                    {
+                        leftJump = 2;
+                        rightJump = totalGapTiles - islandWidthTiles - leftJump;
+                    }
 
-                    default:
-                        BuildSplitLevelSection(x, nextGroundY, widthTiles, sectionTile);
-                        break;
+                    int islandY = nextGroundY - rng.Next(1, MAX_ISLAND_HEIGHT_ABOVE_GROUND + 1) * tile;
+                    int islandX = x + widthTiles * tile + leftJump * tile;
+
+                    // Standalone island in the gap
+                    Rectangle islandTile = RandomIslandTile();
+                    int islandHeightTiles = rng.Next(1, 3); // 1 or 2 tall
+                    AddBlockArea(islandX, islandY, islandWidthTiles, islandHeightTiles, islandTile);
+                    AddDecorationsOnTop(islandX, islandY, islandWidthTiles);
+
+                    // Only some islands get a pillar into the void
+                    if (rng.NextDouble() < 0.35)
+                    {
+                        int pillarStartY = islandY + islandHeightTiles * tile;
+                        int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / tile);
+                        int pillarX = islandX + (islandWidthTiles / 2) * tile;
+                        AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
+                    }
+
+                    x += widthTiles * tile;
+                    x += totalGapTiles * tile;
+                }
+                else
+                {
+                    int gapTiles = rng.Next(NORMAL_GAP_MIN, NORMAL_GAP_MAX + 1);
+                    x += widthTiles * tile;
+                    x += gapTiles * tile;
                 }
 
-                AddFloatingPlatforms(x, nextGroundY, widthTiles);
-
-                x += widthTiles * tile;
-                x += gapTiles * tile;
                 currentGroundY = nextGroundY;
             }
 
-            // End
-            Rectangle endTile = GetThemeTile(RandomTheme());
-            AddBlockArea(x, currentGroundY, 16, 2, endTile);
-            AddDecorationsOnTop(x, currentGroundY, 16);
-
-            Rectangle endUpper1 = GetThemeTile(RandomTheme());
-            AddBlockArea(x + 8 * tile, currentGroundY - 3 * tile, 4, 1, endUpper1);
-            AddDecorationsOnTop(x + 8 * tile, currentGroundY - 3 * tile, 4);
-
-            Rectangle endUpper2 = GetThemeTile(RandomTheme());
-            AddBlockArea(x + 14 * tile, currentGroundY - 5 * tile, 3, 1, endUpper2);
-            AddDecorationsOnTop(x + 14 * tile, currentGroundY - 5 * tile, 3);
+            Rectangle endTile = RandomGroundTile();
+            AddBlockArea(x, currentGroundY, 14, 2, endTile);
+            AddDecorationsOnTop(x, currentGroundY, 14);
         }
 
         private void BuildFlatSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
@@ -236,10 +230,15 @@ namespace GalactaJumperMo.Classes
             AddDecorationsOnTop(startX, groundY, widthTiles);
 
             if (rng.NextDouble() < 0.20)
-                AddUndersideDecor(startX, groundY, widthTiles);
+            {
+                int pillarX = startX + rng.Next(1, Math.Max(2, widthTiles - 1)) * TileSize;
+                int pillarStartY = groundY + 2 * TileSize;
+                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
+                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
+            }
         }
 
-        private void BuildBlockStepUpSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
+        private void BuildStepUpSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
         {
             int leftWidth = Math.Max(3, widthTiles / 2);
             int rightWidth = Math.Max(2, widthTiles - leftWidth);
@@ -251,15 +250,16 @@ namespace GalactaJumperMo.Classes
             AddDecorationsOnTop(startX, groundY, leftWidth);
             AddDecorationsOnTop(startX + leftWidth * TileSize, highY, rightWidth);
 
-            if (rng.NextDouble() < 0.70)
+            if (rng.NextDouble() < 0.30)
             {
-                int pillarX = startX + leftWidth * TileSize;
-                int pillarHeight = Math.Max(2, (groundY - highY) / TileSize + 1);
-                AddDecorativePillar(pillarX, highY + TileSize, pillarHeight, RandomFrom(pillarTiles));
+                int pillarX = startX + leftWidth * TileSize + (rightWidth / 2) * TileSize;
+                int pillarStartY = highY + 4 * TileSize;
+                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
+                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
             }
         }
 
-        private void BuildBlockStepDownSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
+        private void BuildStepDownSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
         {
             int leftWidth = Math.Max(2, widthTiles / 2);
             int rightWidth = Math.Max(3, widthTiles - leftWidth);
@@ -271,11 +271,12 @@ namespace GalactaJumperMo.Classes
             AddDecorationsOnTop(startX, highY, leftWidth);
             AddDecorationsOnTop(startX + leftWidth * TileSize, groundY, rightWidth);
 
-            if (rng.NextDouble() < 0.70)
+            if (rng.NextDouble() < 0.30)
             {
-                int pillarX = startX + leftWidth * TileSize - TileSize;
-                int pillarHeight = Math.Max(2, (groundY - highY) / TileSize + 1);
-                AddDecorativePillar(pillarX, highY + TileSize, pillarHeight, RandomFrom(pillarTiles));
+                int pillarX = startX + (leftWidth / 2) * TileSize;
+                int pillarStartY = highY + 4 * TileSize;
+                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
+                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
             }
         }
 
@@ -294,76 +295,12 @@ namespace GalactaJumperMo.Classes
             AddDecorationsOnTop(startX + left * TileSize, middleY, middle);
             AddDecorationsOnTop(startX + (left + middle) * TileSize, groundY, right);
 
-            if (rng.NextDouble() < 0.80)
+            if (rng.NextDouble() < 0.35)
             {
-                int pillarX1 = startX + left * TileSize;
-                int pillarX2 = startX + (left + middle - 1) * TileSize;
-                int pillarHeight = Math.Max(2, (groundY - middleY) / TileSize + 1);
-
-                AddDecorativePillar(pillarX1, middleY + TileSize, pillarHeight, RandomFrom(pillarTiles));
-                AddDecorativePillar(pillarX2, middleY + TileSize, pillarHeight, RandomFrom(pillarTiles));
-            }
-        }
-
-        private void BuildSplitLevelSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
-        {
-            int first = Math.Max(2, widthTiles / 3);
-            int second = Math.Max(2, widthTiles / 3);
-            int third = Math.Max(2, widthTiles - first - second);
-
-            int y1 = groundY;
-            int y2 = groundY - TileSize;
-            int y3 = groundY - 2 * TileSize;
-
-            AddBlockArea(startX, y1, first, 2, tileSrc);
-            AddBlockArea(startX + first * TileSize, y2, second, 3, tileSrc);
-            AddBlockArea(startX + (first + second) * TileSize, y3, third, 4, tileSrc);
-
-            AddDecorationsOnTop(startX, y1, first);
-            AddDecorationsOnTop(startX + first * TileSize, y2, second);
-            AddDecorationsOnTop(startX + (first + second) * TileSize, y3, third);
-
-            if (rng.NextDouble() < 0.65)
-            {
-                AddDecorativePillar(startX + first * TileSize, y2 + TileSize, 2, RandomFrom(pillarTiles));
-                AddDecorativePillar(startX + (first + second) * TileSize, y3 + TileSize, 3, RandomFrom(pillarTiles));
-            }
-        }
-
-        private void AddFloatingPlatforms(int sectionX, int groundY, int sectionWidthTiles)
-        {
-            int floatingCount = rng.Next(1, 3);
-
-            for (int i = 0; i < floatingCount; i++)
-            {
-                int widthTiles = rng.Next(2, 5);
-                if (sectionWidthTiles <= widthTiles + 1)
-                    continue;
-
-                int px = sectionX + rng.Next(1, sectionWidthTiles - widthTiles) * TileSize;
-                int py = groundY - rng.Next(3, MAX_FLOAT_HEIGHT_TILES + 1) * TileSize;
-
-                Rectangle tileSrc = GetThemeTile(RandomTheme());
-                AddBlockArea(px, py, widthTiles, 1, tileSrc);
-                AddDecorationsOnTop(px, py, widthTiles);
-
-                if (rng.NextDouble() < 0.70)
-                {
-                    int supportCount = widthTiles >= 4 ? 2 : 1;
-
-                    if (supportCount == 1)
-                    {
-                        int pillarX = px + widthTiles / 2 * TileSize;
-                        int pillarHeight = Math.Max(2, (groundY - py) / TileSize - 1);
-                        AddDecorativePillar(pillarX, py + TileSize, pillarHeight, RandomFrom(pillarTiles));
-                    }
-                    else
-                    {
-                        int pillarHeight = Math.Max(2, (groundY - py) / TileSize - 1);
-                        AddDecorativePillar(px + TileSize, py + TileSize, pillarHeight, RandomFrom(pillarTiles));
-                        AddDecorativePillar(px + (widthTiles - 2) * TileSize, py + TileSize, pillarHeight, RandomFrom(pillarTiles));
-                    }
-                }
+                int pillarX = startX + left * TileSize + (middle / 2) * TileSize;
+                int pillarStartY = middleY + 4 * TileSize;
+                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
+                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
             }
         }
 
@@ -386,6 +323,22 @@ namespace GalactaJumperMo.Classes
             }
         }
 
+        private void AddSolidPillar(int x, int startY, int heightTiles, Rectangle pillarSrc)
+        {
+            for (int i = 0; i < heightTiles; i++)
+            {
+                Rectangle dest = new Rectangle(
+                    x,
+                    startY + i * TileSize,
+                    TileSize,
+                    TileSize
+                );
+
+                SolidTiles.Add(new TileInstance(pillarSrc, dest, true));
+                Platforms.Add(dest);
+            }
+        }
+
         private void AddDecorationsOnTop(int startX, int groundY, int widthTiles)
         {
             if (widthTiles < 2) return;
@@ -396,7 +349,7 @@ namespace GalactaJumperMo.Classes
             {
                 int x = startX + rng.Next(0, widthTiles) * TileSize;
 
-                Rectangle src = rng.NextDouble() < 0.72
+                Rectangle src = rng.NextDouble() < 0.75
                     ? RandomFrom(smallTopDecorTiles)
                     : RandomFrom(rootedDecorTiles);
 
@@ -408,41 +361,6 @@ namespace GalactaJumperMo.Classes
                 );
 
                 DecorationTiles.Add(new TileInstance(src, dest, false));
-            }
-        }
-
-        private void AddUndersideDecor(int startX, int startY, int widthTiles)
-        {
-            for (int col = 0; col < widthTiles; col++)
-            {
-                if (rng.NextDouble() < 0.40)
-                {
-                    Rectangle src = RandomFrom(undersideDecorTiles);
-
-                    Rectangle dest = new Rectangle(
-                        startX + col * TileSize,
-                        startY + TileSize,
-                        TileSize,
-                        TileSize
-                    );
-
-                    DecorationTiles.Add(new TileInstance(src, dest, false));
-                }
-            }
-        }
-
-        private void AddDecorativePillar(int x, int startY, int heightTiles, Rectangle pillarSrc)
-        {
-            for (int i = 0; i < heightTiles; i++)
-            {
-                Rectangle dest = new Rectangle(
-                    x,
-                    startY + i * TileSize,
-                    TileSize,
-                    TileSize
-                );
-
-                DecorationTiles.Add(new TileInstance(pillarSrc, dest, false));
             }
         }
 
