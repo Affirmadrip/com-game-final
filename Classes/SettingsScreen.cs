@@ -81,9 +81,6 @@ namespace GalactaJumperMo.Classes
             return y;
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // UPDATE
-        // ═════════════════════════════════════════════════════════════════════
         public override void Update(GameTime gt, int sw, int sh)
         {
             float dt = (float)gt.ElapsedGameTime.TotalSeconds;
@@ -165,9 +162,6 @@ namespace GalactaJumperMo.Classes
             };
         }
 
-        // ═════════════════════════════════════════════════════════════════════
-        // DRAW
-        // ═════════════════════════════════════════════════════════════════════
         public override void Draw(SpriteBatch sb, int sw, int sh)
         {
             DrawBg(sb, _pixel, sw, sh);
@@ -226,7 +220,7 @@ namespace GalactaJumperMo.Classes
                 : new Color(TextDim.R,   TextDim.G,   TextDim.B,   alpha);
             sb.DrawString(_menuFont, label, new Vector2(x, y), labelCol);
 
-            // Tick box  [ ■ ] / [   ] drawn to the right of the label
+            // Tick box  [ 0 ] / [   ] drawn to the right of the label
             float labelW = _menuFont.MeasureString(label).X;
             float boxX   = x + labelW + 24f;
             float boxY   = y + 2f;

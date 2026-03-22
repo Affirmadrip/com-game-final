@@ -89,11 +89,6 @@ public class Game1 : Game
     }
 
     // ── Public pause API ──────────────────────────────────────────────────────
-    /// <summary>
-    /// Pauses the game and shows the pause screen.
-    /// Stops all game updates (player, enemies, timer) until resumed.
-    /// Call this from anywhere to freeze the game.
-    /// </summary>
     public void Pause()
     {
         if (_gameState != GameState.Playing) return;
@@ -125,9 +120,6 @@ public class Game1 : Game
         _gameState = GameState.Settings;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // UPDATE
-    // ═════════════════════════════════════════════════════════════════════════
     protected override void Update(GameTime gameTime)
     {
         int sw = GraphicsDevice.Viewport.Width;
@@ -260,9 +252,6 @@ public class Game1 : Game
                             * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // DRAW
-    // ═════════════════════════════════════════════════════════════════════════
     protected override void Draw(GameTime gameTime)
     {
         int sw = GraphicsDevice.Viewport.Width;
