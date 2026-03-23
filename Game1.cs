@@ -342,14 +342,28 @@ public class Game1 : Game
 
     private void BuildStageAndActors()
     {
-        stage  = new Stage();
-        player = new Player { Position = stage.PlayerSpawn };
+        stage = new Stage();
 
-        timeLeft        = 120f;
-        cameraTransform = Matrix.Identity;
+        player = new Player();
+        player.Position = stage.PlayerSpawn;
+        player.ResetVelocity();
 
         enemies = new List<Enemy>();
         foreach (Vector2 spawn in stage.EnemySpawns)
             enemies.Add(new Enemy(spawn));
+
+        timeLeft = 120f;
+
+        UpdateCameraImmediate();
+    }
+
+    private void UpdateCameraImmediate()
+    {
+        float viewportWidth = GraphicsDevice.Viewport.Width / WorldZoom;
+        float maxCameraX    = Math.Max(0, stage.StageWidthPixels - viewportWidth);
+        float cameraX       = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
+
+        cameraTransform = Matrix.CreateTranslation(-cameraX, 0, 0)
+                        * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
     }
 }
