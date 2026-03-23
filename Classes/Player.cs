@@ -1,6 +1,5 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-
 namespace GalactaJumperMo.Classes
 {
 
@@ -15,6 +14,8 @@ namespace GalactaJumperMo.Classes
         private float gravity = 1000f;
 
         private bool isOnGround = false;
+        public bool JustJumped { get; private set; }
+        public bool JustDashed { get; private set; }
 
         // animation management
         private int animRow;
@@ -27,6 +28,12 @@ namespace GalactaJumperMo.Classes
         public Rectangle Bounds =>
             new Rectangle((int)Position.X, (int)Position.Y, 32, 32);
 
+        // Health System
+        public bool IsInvincible => invincibilityTimer > 0f;
+        public bool Visible = true;
+        private float invincibilityTimer = 0f;
+        private const float InvincibilityDuration = 1.5f;
+        private float flickerTimer = 0f;
 
         // 8-directional dashing
         public bool getDashingState => isDashing;
@@ -40,9 +47,11 @@ namespace GalactaJumperMo.Classes
         private float dashCooldown = 1.5f;
         private Vector2 dashDirection;
 
-
+ 
         public void Update(GameTime gameTime, Stage stage)
         {
+            JustJumped = false;
+            JustDashed = false;
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             KeyboardState k = Keyboard.GetState();
 
@@ -68,6 +77,7 @@ namespace GalactaJumperMo.Classes
 
                 dashDirection = Vector2.Normalize(new Vector2(dx, dy));
                 isDashing = true;
+                JustDashed = true;
                 dashTimer = dashDuration;
                 dashCooldownTimer = dashCooldown;
             }
@@ -85,6 +95,7 @@ namespace GalactaJumperMo.Classes
                 {
                     velocity.Y = jumpForce;
                     isOnGround = false;
+                    JustJumped = true;
                 }
             }
 
@@ -199,6 +210,23 @@ namespace GalactaJumperMo.Classes
                 FacingLeft = true;
             else if (velocity.X > 0)
                 FacingLeft = false;
+
+            if (invincibilityTimer > 0f)
+            {
+                invincibilityTimer -= dt;
+                flickerTimer += dt;
+                Visible = (int)(flickerTimer / 0.1f) % 2 == 0;
+            }
+            else
+            {
+                Visible = true;
+            }
+        }
+
+        public void TriggerIncinvincible()
+        {
+            invincibilityTimer = InvincibilityDuration;
+            flickerTimer = 0f;
         }
 
         public void ResetVelocity()

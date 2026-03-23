@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using GalactaJumperMo.Classes;
+using Microsoft.Xna.Framework.Audio;
 
 namespace GalactaJumperMo;
 
@@ -16,29 +17,46 @@ public class Game1 : Game
 
     // ── Game state ────────────────────────────────────────────────────────────
     private enum GameState { MainMenu, Playing, Paused, GameOver, Tutorial, Settings }
-    private GameState _gameState      = GameState.MainMenu;
+    private GameState _gameState = GameState.MainMenu;
     private GameState _preSettingsState = GameState.MainMenu;
 
     // ── Screens ───────────────────────────────────────────────────────────────
     private MainMenuScreen _mainMenu;
     private TutorialScreen _tutorial;
     private SettingsScreen _settings;
-    private PauseScreen    _pause;
+    private PauseScreen _pause;
     private GameOverScreen _gameOver;
 
     private SpriteFont _titleFont;
     private SpriteFont _menuFont;
 
     // ── In-game ───────────────────────────────────────────────────────────────
-    private Stage      stage;
-    private Player     player;
+    private Stage stage;
+    private Player player;
     private List<Enemy> enemies;
 
-    private Texture2D  pixel;
-    private Texture2D  tilemap;
-    private Texture2D  playerTexture;
-    private Texture2D  enemyTexture;
+    private Texture2D pixel;
+    private Texture2D tilemap;
+    private Texture2D playerTexture;
+    private Texture2D enemyTexture;
     private SpriteFont font;
+
+    private int maxHealth = 3;
+    private int currentHealth = 3;
+    private Texture2D heartFull;
+    private Texture2D heartEmpty;
+
+    //SFX
+    SoundEffect sfxHurt;
+    SoundEffect sfxJump;
+    SoundEffect sfxDash;
+
+
+    private float shakeTimer = 0f;
+    private const float shakeDuration = 0.35f;
+    private const float shakeStrength = 5f;
+    private Vector2 shakeOffset = Vector2.Zero;
+    private Random shakeRng = new Random();
 
     private float timeLeft = 120f;
     private Matrix cameraTransform;
@@ -56,9 +74,9 @@ public class Game1 : Game
     private void SetFullscreenMode()
     {
         DisplayMode d = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
-        _graphics.HardwareModeSwitch       = true;
-        _graphics.IsFullScreen             = true;
-        _graphics.PreferredBackBufferWidth  = d.Width;
+        _graphics.HardwareModeSwitch = true;
+        _graphics.IsFullScreen = true;
+        _graphics.PreferredBackBufferWidth = d.Width;
         _graphics.PreferredBackBufferHeight = d.Height;
     }
 
@@ -70,22 +88,29 @@ public class Game1 : Game
 
     protected override void LoadContent()
     {
+        heartFull = Content.Load<Texture2D>("UI/heart_full");
+        heartEmpty = Content.Load<Texture2D>("UI/heart_empty");
+
         _spriteBatch = new SpriteBatch(GraphicsDevice);
 
         pixel = new Texture2D(GraphicsDevice, 1, 1);
         pixel.SetData(new[] { Color.White });
 
-        font          = Content.Load<SpriteFont>("Fonts/GameFont");
-        tilemap       = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
+        font = Content.Load<SpriteFont>("Fonts/GameFont");
+        tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
-        enemyTexture  = Content.Load<Texture2D>("Enemies/ghost_sprites");
-        _titleFont    = Content.Load<SpriteFont>("Fonts/TitleFont");
-        _menuFont     = Content.Load<SpriteFont>("Fonts/MenuFont");
+        sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
+        sfxJump = Content.Load<SoundEffect>("Audio/jump");
+        sfxDash = Content.Load<SoundEffect>("Audio/dash");
+
+        enemyTexture = Content.Load<Texture2D>("Enemies/ghost_sprites");
+        _titleFont = Content.Load<SpriteFont>("Fonts/TitleFont");
+        _menuFont = Content.Load<SpriteFont>("Fonts/MenuFont");
 
         _mainMenu = new MainMenuScreen(_titleFont, _menuFont, pixel, hasSaveData: false);
         _tutorial = new TutorialScreen(_titleFont, _menuFont, pixel);
         _settings = new SettingsScreen(_titleFont, _menuFont, pixel);
-        _pause    = new PauseScreen(_titleFont, _menuFont, pixel);
+        _pause = new PauseScreen(_titleFont, _menuFont, pixel);
     }
 
     // ── Public pause API ──────────────────────────────────────────────────────
@@ -109,7 +134,7 @@ public class Game1 : Game
 
     private void TriggerGameOver(string reason)
     {
-        _gameOver  = new GameOverScreen(_titleFont, _menuFont, pixel, reason);
+        _gameOver = new GameOverScreen(_titleFont, _menuFont, pixel, reason);
         _gameState = GameState.GameOver;
     }
 
@@ -180,10 +205,10 @@ public class Game1 : Game
                 _pause.Update(gameTime, sw, sh);
                 switch (_pause.PendingAction)
                 {
-                    case PauseAction.Resume:   Resume(); break;
+                    case PauseAction.Resume: Resume(); break;
                     case PauseAction.Settings: OpenSettings(); break;
                     case PauseAction.MainMenu: GoToMainMenu(); break;
-                    case PauseAction.Exit:     Exit(); break;
+                    case PauseAction.Exit: Exit(); break;
                 }
                 break;
 
@@ -221,14 +246,44 @@ public class Game1 : Game
 
         player.Update(gameTime, stage);
 
+        if (player.JustJumped) sfxJump.Play();
+        if (player.JustDashed) sfxDash.Play();
+
         foreach (Enemy enemy in enemies)
         {
             enemy.Update(gameTime, stage);
-            if (player.Bounds.Intersects(enemy.Bounds))
+            // if (player.Bounds.Intersects(enemy.Bounds))
+            // {
+            //     TriggerGameOver("You were defeated.");
+            //     return;
+            // }
+
+            if (!player.IsInvincible && player.Bounds.Intersects(enemy.Bounds))
             {
-                TriggerGameOver("You were defeated.");
-                return;
+                currentHealth--;
+                sfxHurt.Play();
+                player.TriggerIncinvincible();
+                shakeTimer = shakeDuration;
+                if (currentHealth <= 0)
+                {
+                    TriggerGameOver("You were defeated.");
+                    return;
+                }
             }
+        }
+
+        if (shakeTimer > 0f)
+        {
+            shakeTimer -= dt;
+            float curStr = shakeStrength * (shakeTimer / shakeDuration);
+            shakeOffset = new Vector2(
+                (float)(shakeRng.NextDouble() * 2 - 1) * curStr,
+                (float)(shakeRng.NextDouble() * 2 - 1) * curStr
+            );
+        }
+        else
+        {
+            shakeOffset = Vector2.Zero;
         }
 
         timeLeft -= dt;
@@ -246,10 +301,12 @@ public class Game1 : Game
         }
 
         float viewportWidth = GraphicsDevice.Viewport.Width / WorldZoom;
-        float maxCameraX    = Math.Max(0, stage.StageWidthPixels - viewportWidth);
-        float cameraX       = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
-        cameraTransform     = Matrix.CreateTranslation(-cameraX, 0, 0)
-                            * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
+        float maxCameraX = Math.Max(0, stage.StageWidthPixels - viewportWidth);
+        float cameraX = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
+        // cameraTransform     = Matrix.CreateTranslation(-cameraX, 0, 0)
+        //                     * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
+        cameraTransform = Matrix.CreateTranslation(-cameraX + shakeOffset.X, shakeOffset.Y, 0)
+                * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
     }
 
     protected override void Draw(GameTime gameTime)
@@ -315,28 +372,36 @@ public class Game1 : Game
 
         foreach (Enemy enemy in enemies)
             enemy.Draw(_spriteBatch, enemyTexture);
-
-        Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
-        Vector2 origin  = new Vector2(16, 16);
-
-        if (player.getDashingState)
+        if (player.Visible)
         {
-            float angle = (float)Math.Atan2(player.getDashDirection.Y, player.getDashDirection.X);
-            _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect,
-                Color.White, angle, origin, 1f, SpriteEffects.None, 0f);
-        }
-        else
-        {
-            SpriteEffects flip = player.FacingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
-            _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect,
-                Color.White, 0f, origin, 1f, flip, 0f);
-        }
+            Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
 
+
+            Vector2 origin = new Vector2(16, 16);
+
+            if (player.getDashingState)
+            {
+                float angle = (float)Math.Atan2(player.getDashDirection.Y, player.getDashDirection.X);
+                _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect, Color.White, angle, origin, 1f, SpriteEffects.None, 0f);
+            }
+            else
+            {
+                SpriteEffects flip = player.FacingLeft ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
+                _spriteBatch.Draw(playerTexture, drawPos, player.SourceRect, Color.White, 0f, origin, 1f, flip, 0f);
+            }
+        }
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
         _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
+        int heartSize = 80;
+        int heartPadding = 6;
+        for (int i = 0; i < maxHealth; i++)
+        {
+            Texture2D heart = i < currentHealth ? heartFull : heartEmpty;
+            _spriteBatch.Draw(heart, new Rectangle(20 + i * (heartSize + heartPadding), 55, heartSize, heartSize), Color.White);
+        }
         _spriteBatch.End();
     }
 
@@ -354,14 +419,16 @@ public class Game1 : Game
 
         timeLeft = 120f;
 
+        currentHealth = maxHealth;
+
         UpdateCameraImmediate();
     }
 
     private void UpdateCameraImmediate()
     {
         float viewportWidth = GraphicsDevice.Viewport.Width / WorldZoom;
-        float maxCameraX    = Math.Max(0, stage.StageWidthPixels - viewportWidth);
-        float cameraX       = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
+        float maxCameraX = Math.Max(0, stage.StageWidthPixels - viewportWidth);
+        float cameraX = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
 
         cameraTransform = Matrix.CreateTranslation(-cameraX, 0, 0)
                         * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
