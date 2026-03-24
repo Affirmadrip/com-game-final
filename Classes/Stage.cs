@@ -25,6 +25,7 @@ namespace GalactaJumperMo.Classes
         public List<TileInstance> DecorationTiles = new List<TileInstance>();
 
         public List<Vector2> EnemySpawns = new List<Vector2>();
+        public List<Vector2> LizardSpawns = new List<Vector2>();
 
         public Vector2 PlayerSpawn;
         public int VoidY;
@@ -350,7 +351,14 @@ namespace GalactaJumperMo.Classes
             float enemyX = startX + tileOffset * TileSize;
             float enemyY = groundY - 30; // fits the enemy landing logic, and hitbox
 
-            EnemySpawns.Add(new Vector2(enemyX, enemyY));
+            if (rng.NextDouble() < 0.40) //  40% Lizard
+            {
+                LizardSpawns.Add(new Vector2(enemyX, enemyY));
+            }
+            else 
+            {
+                EnemySpawns.Add(new Vector2(enemyX, enemyY));
+            }
         }
 
         private void AddBlockArea(int x, int y, int widthTiles, int heightTiles, Rectangle src)

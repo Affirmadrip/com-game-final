@@ -1,88 +1,83 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Collections.Generic;
+using System;
 
 namespace GalactaJumperMo.Classes
 {
     public class Enemy
     {
         public Vector2 Position;
-        private Vector2 velocity;
-        private float speed = 75f; 
-        private float gravity = 500f;
+        private Vector2 basePosition;
+        private float startX;
+        private float speed = 80f;
         private int direction = 1;
+        private float patrolRange = 150f;
 
-        // Hitbox 
+        // --- Sine Wave ---
+        private float sineTimer = 0f;
+        private float waveAmplitude = 15f;
+        private float waveSpeed = 4f;
+
+        private float alpha = 1.0f;
+        private float alphaTimer = 0f;
+        private float fadeSpeed = 2f;
+        private float minAlpha = 0.2f;
+
+        public bool IsPhaseOut => alpha < 0.5f;
+
+        public bool IsDead = false;
+
         public Rectangle Bounds => new Rectangle((int)Position.X + 6, (int)Position.Y + 6, 20, 24);
 
         private int animFrame;
         private float animTimer;
-        private float frameDuration = 0.15f;
+        private float frameDuration = 0.12f;
 
         public Enemy(Vector2 startPos)
         {
+            basePosition = startPos;
             Position = startPos;
+            startX = startPos.X;
         }
 
         public void Update(GameTime gameTime, Stage stage)
         {
+            if (IsDead) return; 
+
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            velocity.X = speed * direction;
-            velocity.Y += gravity * dt;
+            // Fade
+            alphaTimer += dt * fadeSpeed;
+            float lerpFactor = (float)(Math.Cos(alphaTimer) + 1f) / 2f;
+            alpha = MathHelper.Lerp(minAlpha, 1.0f, lerpFactor);
 
-            Vector2 oldPosition = Position;
-            Position.X += velocity.X * dt;
-            Position.Y += velocity.Y * dt;
+            //  Sine Wave
+            basePosition.X += speed * direction * dt;
 
-            bool isOnGround = false;
+            if (basePosition.X > startX + patrolRange) { direction = -1; basePosition.X = startX + patrolRange; }
+            else if (basePosition.X < startX - patrolRange) { direction = 1; basePosition.X = startX - patrolRange; }
 
-            // Collision 
+            sineTimer += dt * waveSpeed;
+            Position.X = basePosition.X;
+            Position.Y = basePosition.Y + (float)Math.Sin(sineTimer) * waveAmplitude;
+
+            // 3. ป้องกันการชนพื้น
             foreach (Rectangle platform in stage.Platforms)
             {
                 if (Bounds.Intersects(platform))
                 {
-                    float footBottom = oldPosition.Y + 30;
-
-                    if (velocity.Y > 0 && footBottom <= platform.Top + 15)
-                    {
-                        Position.Y = platform.Top - 30;
-                        velocity.Y = 0;
-                        isOnGround = true;
-                    }
-                    // flip
+                    if (Position.Y + 28 > platform.Top && Position.Y < platform.Top)
+                        basePosition.Y = platform.Top - 30 - waveAmplitude;
                     else
                     {
                         direction *= -1;
-                        Position.X = oldPosition.X;
+                        basePosition.X += direction * 5;
                     }
+                    break;
                 }
             }
 
-            // Patrol Logic
-            if (isOnGround)
-            {
-                float checkX = direction > 0 ? Bounds.Right + 5 : Bounds.Left - 5;
-                Vector2 checkPoint = new Vector2(checkX, Bounds.Bottom + 5);
-
-                bool holeAhead = true;
-                foreach (Rectangle platform in stage.Platforms)
-                {
-                    if (platform.Contains(checkPoint))
-                    {
-                        holeAhead = false;
-                        break;
-                    }
-                }
-
-                if (holeAhead)
-                {
-                    direction *= -1; 
-                    Position.X = oldPosition.X;
-                }
-            }
-
-            //  Animation 6 frames
+            // Animation
             animTimer += dt;
             if (animTimer >= frameDuration)
             {
@@ -93,22 +88,20 @@ namespace GalactaJumperMo.Classes
 
         public void Draw(SpriteBatch sb, Texture2D texture)
         {
-            Color tint = Color.White;
+            if (IsDead || texture == null) return;
+
+            //  IsPhaseOut 
+            Color tintColor = IsPhaseOut ? Color.LightBlue * alpha : Color.White * alpha;
 
             int frameWidth = texture.Width / 6;
             int frameHeight = texture.Height;
-
             Rectangle sourceRect = new Rectangle(animFrame * frameWidth, 0, frameWidth, frameHeight);
-
             Vector2 origin = new Vector2(frameWidth / 2f, frameHeight / 2f);
-
             Vector2 drawPos = new Vector2(Position.X + 16, Position.Y + 12);
 
             SpriteEffects flip = direction < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
 
-            float scale = 1.0f;
-
-            sb.Draw(texture, drawPos, sourceRect, tint, 0f, origin, scale, flip, 0f);
+            sb.Draw(texture, drawPos, sourceRect, tintColor, 0f, origin, 1.0f, flip, 0f);
         }
     }
 }

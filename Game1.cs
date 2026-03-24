@@ -34,11 +34,14 @@ public class Game1 : Game
     private Stage stage;
     private Player player;
     private List<Enemy> enemies;
+    private List<EnemyLizard> lizards;
 
     private Texture2D pixel;
     private Texture2D tilemap;
     private Texture2D playerTexture;
-    private Texture2D enemyTexture;
+    private Texture2D ghostTexture;
+    private Texture2D lizardWalkTex;
+    private Texture2D lizardTongueTex;
     private SpriteFont font;
 
     private int maxHealth = 3;
@@ -103,7 +106,9 @@ public class Game1 : Game
         sfxJump = Content.Load<SoundEffect>("Audio/jump");
         sfxDash = Content.Load<SoundEffect>("Audio/dash");
 
-        enemyTexture = Content.Load<Texture2D>("Enemies/ghost_sprites");
+        ghostTexture = Content.Load<Texture2D>("Enemies/ghost/ghost_sprites");
+        lizardWalkTex = Content.Load<Texture2D>("Enemies/lizard/lizard_walk");
+        lizardTongueTex = Content.Load<Texture2D>("Enemies/lizard/lizard_tongue");
         _titleFont = Content.Load<SpriteFont>("Fonts/TitleFont");
         _menuFont = Content.Load<SpriteFont>("Fonts/MenuFont");
 
@@ -249,28 +254,68 @@ public class Game1 : Game
         if (player.JustJumped) sfxJump.Play();
         if (player.JustDashed) sfxDash.Play();
 
-        foreach (Enemy enemy in enemies)
+        //ghost
+        for (int i = enemies.Count - 1; i >= 0; i--)
         {
+            Enemy enemy = enemies[i];
             enemy.Update(gameTime, stage);
-            // if (player.Bounds.Intersects(enemy.Bounds))
-            // {
-            //     TriggerGameOver("You were defeated.");
-            //     return;
-            // }
 
-            if (!player.IsInvincible && player.Bounds.Intersects(enemy.Bounds))
+            if (player.Bounds.Intersects(enemy.Bounds))
             {
-                currentHealth--;
-                sfxHurt.Play();
-                player.TriggerIncinvincible();
-                shakeTimer = shakeDuration;
-                if (currentHealth <= 0)
+                if (player.getDashingState)
                 {
-                    TriggerGameOver("You were defeated.");
-                    return;
+                    if (!enemy.IsPhaseOut)
+                    {
+                        enemies.RemoveAt(i);
+                        continue;
+                    }
+                }
+                else if (!player.IsInvincible) 
+                {
+                    currentHealth--;
+                    sfxHurt.Play();
+                    player.TriggerIncinvincible();
+                    shakeTimer = shakeDuration;
+
+                    if (currentHealth <= 0)
+                    {
+                        TriggerGameOver("You were defeated.");
+                        return;
+                    }
                 }
             }
         }
+        //lizard
+        for (int i = lizards.Count - 1; i >= 0; i--)
+        {
+            var liz = lizards[i];
+            liz.Update(gameTime, stage, player.Position);
+
+            if (player.Bounds.Intersects(liz.Bounds) || liz.IsHittingPlayer(player.Bounds))
+            {
+                if (player.getDashingState)
+                {
+                    lizards.RemoveAt(i);        
+                                            
+                    continue;      
+                }
+
+                else if (!player.IsInvincible)
+                {
+                    currentHealth--;
+                    sfxHurt.Play();
+                    player.TriggerIncinvincible();
+                    shakeTimer = shakeDuration;
+
+                    if (currentHealth <= 0)
+                    {
+                        TriggerGameOver("Defeated by a lizard!");
+                        return;
+                    }
+                }
+            }
+        }
+
 
         if (shakeTimer > 0f)
         {
@@ -369,10 +414,14 @@ public class Game1 : Game
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
         foreach (TileInstance tile in stage.DecorationTiles)
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
-
+        //ghost
         foreach (Enemy enemy in enemies)
-            enemy.Draw(_spriteBatch, enemyTexture);
-        if (player.Visible)
+            enemy.Draw(_spriteBatch, ghostTexture);
+        //lizard
+        foreach (var liz in lizards)
+        liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
+
+    if (player.Visible)
         {
             Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
 
@@ -416,6 +465,10 @@ public class Game1 : Game
         enemies = new List<Enemy>();
         foreach (Vector2 spawn in stage.EnemySpawns)
             enemies.Add(new Enemy(spawn));
+
+        lizards = new List<EnemyLizard>();
+        foreach (Vector2 spawn in stage.LizardSpawns)
+            lizards.Add(new EnemyLizard(spawn));
 
         timeLeft = 120f;
 

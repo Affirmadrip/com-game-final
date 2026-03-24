@@ -13,7 +13,25 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin Enemies/ghost_sprites.png
+#begin Audio/dash.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/dash.wav
+
+#begin Audio/hurt.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/hurt.wav
+
+#begin Audio/jump.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/jump.wav
+
+#begin Enemies/ghost/ghost_sprites.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -23,7 +41,31 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Enemies/ghost_sprites.png
+/build:Enemies/ghost/ghost_sprites.png
+
+#begin Enemies/lizard/lizard_tongue.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Enemies/lizard/lizard_tongue.png
+
+#begin Enemies/lizard/lizard_walk.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Enemies/lizard/lizard_walk.png
 
 #begin Fonts/GameFont.spritefont
 /importer:FontDescriptionImporter
@@ -32,19 +74,19 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/GameFont.spritefont
 
-#begin Fonts/TitleFont.spritefont
-/importer:FontDescriptionImporter
-/processor:FontDescriptionProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Compressed
-/build:Fonts/TitleFont.spritefont
-
 #begin Fonts/MenuFont.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
 /processorParam:PremultiplyAlpha=True
 /processorParam:TextureFormat=Compressed
 /build:Fonts/MenuFont.spritefont
+
+#begin Fonts/TitleFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Fonts/TitleFont.spritefont
 
 #begin Player/mo_sprites.png
 /importer:TextureImporter
@@ -58,7 +100,7 @@
 /processorParam:TextureFormat=Color
 /build:Player/mo_sprites.png
 
-#begin UI/heart_full.png
+#begin Stage/monochrome_tilemap_transparent_packed.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -68,7 +110,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:UI/heart_full.png
+/build:Stage/monochrome_tilemap_transparent_packed.png
 
 #begin UI/heart_empty.png
 /importer:TextureImporter
@@ -82,7 +124,7 @@
 /processorParam:TextureFormat=Color
 /build:UI/heart_empty.png
 
-#begin Stage/monochrome_tilemap_transparent_packed.png
+#begin UI/heart_full.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -92,22 +134,5 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:Stage/monochrome_tilemap_transparent_packed.png
+/build:UI/heart_full.png
 
-#begin Audio/jump.wav
-/importer:WavImporter
-/processor:SoundEffectProcessor
-/processorParam:Quality=Best
-/build:Audio/jump.wav
-
-#begin Audio/dash.wav
-/importer:WavImporter
-/processor:SoundEffectProcessor
-/processorParam:Quality=Best
-/build:Audio/dash.wav
-
-#begin Audio/hurt.wav
-/importer:WavImporter
-/processor:SoundEffectProcessor
-/processorParam:Quality=Best
-/build:Audio/hurt.wav
