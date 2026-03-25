@@ -37,9 +37,13 @@ public class Game1 : Game
     private List<EnemyLizard> lizards;
     private List<EnemyBat> bats;
     
-    // เพิ่ม List ดาวและรูปดาว
+    // ตัวแปรสำหรับดาวและ UI
     private Texture2D starTexture;
     private List<Star> stars;
+    private int totalEnemiesForDrop;
+    private int remainingStarsToDrop;
+    private Random dropRng = new Random();
+    private int collectedStarsCount = 0; // ตัวนับจำนวนดาวที่เก็บได้
 
     private Texture2D pixel;
     private Texture2D tilemap;
@@ -56,11 +60,11 @@ public class Game1 : Game
     private Texture2D heartFull;
     private Texture2D heartEmpty;
 
-    //SFX
+    // SFX
     SoundEffect sfxHurt;
     SoundEffect sfxJump;
     SoundEffect sfxDash;
-
+    SoundEffect sfxStar; // เพิ่มตัวแปรเสียงเก็บดาว
 
     private float shakeTimer = 0f;
     private const float shakeDuration = 0.35f;
@@ -110,9 +114,12 @@ public class Game1 : Game
         font = Content.Load<SpriteFont>("Fonts/GameFont");
         tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
+        
+        // โหลดเสียง
         sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
         sfxJump = Content.Load<SoundEffect>("Audio/jump");
         sfxDash = Content.Load<SoundEffect>("Audio/dash");
+        sfxStar = Content.Load<SoundEffect>("Audio/starcorrect"); // โหลดเสียงเก็บดาว
 
         // โหลดรูปดาว
         starTexture = Content.Load<Texture2D>("Star/starcoin");
@@ -131,7 +138,6 @@ public class Game1 : Game
         _pause = new PauseScreen(_titleFont, _menuFont, pixel);
     }
 
-    // ── Public pause API ──────────────────────────────────────────────────────
     public void Pause()
     {
         if (_gameState != GameState.Playing) return;
@@ -161,6 +167,22 @@ public class Game1 : Game
         _preSettingsState = _gameState;
         _settings = new SettingsScreen(_titleFont, _menuFont, pixel);
         _gameState = GameState.Settings;
+    }
+
+    // เมธอดจัดการการดรอปดาวเมื่อศัตรูตาย
+    private void HandleEnemyDeath(Vector2 deathPosition)
+    {
+        if (totalEnemiesForDrop <= 0) return;
+
+        double dropChance = (double)remainingStarsToDrop / totalEnemiesForDrop;
+        
+        if (dropRng.NextDouble() < dropChance)
+        {
+            stars.Add(new Star(starTexture, deathPosition));
+            remainingStarsToDrop--; 
+        }
+        
+        totalEnemiesForDrop--;
     }
 
     protected override void Update(GameTime gameTime)
@@ -267,15 +289,14 @@ public class Game1 : Game
         if (player.JustJumped) sfxJump.Play();
         if (player.JustDashed) sfxDash.Play();
         
-        // เช็คเก็บดาว
+        // เช็คการเก็บดาวและบวกจำนวน
         foreach (var star in stars)
         {
             if (!star.IsCollected && player.Bounds.Intersects(star.Bounds))
             {
                 star.IsCollected = true;
-                
-                // สามารถใส่เสียงเก็บของหรือเปลี่ยนไปด่านถัดไปตรงนี้ได้เลย
-                // TriggerGameOver("Level Complete! You got the star!"); 
+                collectedStarsCount++;
+                sfxStar.Play(); // เล่นเสียงตอนเก็บดาว
             }
         }
 
@@ -291,6 +312,7 @@ public class Game1 : Game
                 {
                     if (!enemy.IsPhaseOut)
                     {
+                        HandleEnemyDeath(enemy.Position);
                         enemies.RemoveAt(i);
                         continue;
                     }
@@ -320,11 +342,10 @@ public class Game1 : Game
             {
                 if (player.getDashingState)
                 {
+                    HandleEnemyDeath(liz.Position);
                     lizards.RemoveAt(i);        
-                                            
                     continue;      
                 }
-
                 else if (!player.IsInvincible)
                 {
                     currentHealth--;
@@ -350,6 +371,7 @@ public class Game1 : Game
             {
                 if (player.getDashingState)
                 {
+                    HandleEnemyDeath(bat.Position);
                     bats.RemoveAt(i); 
                     continue;
                 }
@@ -368,7 +390,6 @@ public class Game1 : Game
                 }
             }
         }
-
 
         if (shakeTimer > 0f)
         {
@@ -470,12 +491,12 @@ public class Game1 : Game
             enemy.Draw(_spriteBatch, ghostTexture);
         //lizard
         foreach (var liz in lizards)
-        liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
+            liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
         //bat
         foreach (var bat in bats)
             bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
             
-        // วาดดาวที่โหลดมาจาก List 
+        // วาดดาว
         foreach (var star in stars)
         {
             star.Draw(_spriteBatch);
@@ -484,8 +505,6 @@ public class Game1 : Game
         if (player.Visible)
         {
             Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
-
-
             Vector2 origin = new Vector2(16, 16);
 
             if (player.getDashingState)
@@ -502,8 +521,12 @@ public class Game1 : Game
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        
+        // วาดเวลา
         Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
         _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
+        
+        // วาดหัวใจ
         int heartSize = 80;
         int heartPadding = 6;
         for (int i = 0; i < maxHealth; i++)
@@ -511,6 +534,22 @@ public class Game1 : Game
             Texture2D heart = i < currentHealth ? heartFull : heartEmpty;
             _spriteBatch.Draw(heart, new Rectangle(20 + i * (heartSize + heartPadding), 55, heartSize, heartSize), Color.White);
         }
+
+        // ------------------------------------------------------------------
+        // --- วาด UI จำนวนดาวที่มุมขวาบน แบบบังคับขนาด ---
+        // ------------------------------------------------------------------
+        int screenWidth = GraphicsDevice.Viewport.Width;
+        int uiStarSize = 60; // ขนาดคงที่ 60x60 พิกเซล
+        Vector2 starUiPos = new Vector2(screenWidth - 160, 20); 
+        
+        // บังคับสเกลภาพให้พอดีกับกรอบ Rectangle ที่เราตั้งไว้
+        _spriteBatch.Draw(starTexture, new Rectangle((int)starUiPos.X, (int)starUiPos.Y, uiStarSize, uiStarSize), Color.White);
+        
+        string starText = $"x {collectedStarsCount}";
+        Vector2 textPos = new Vector2(starUiPos.X + uiStarSize + 10, starUiPos.Y + (uiStarSize / 2) - 15);
+        _spriteBatch.DrawString(font, starText, textPos, Color.Yellow); 
+        // ------------------------------------------------------------------
+
         _spriteBatch.End();
     }
 
@@ -534,13 +573,17 @@ public class Game1 : Game
         foreach (Vector2 spawn in stage.BatSpawns)
             bats.Add(new EnemyBat(spawn));
             
-        // สร้างดาวและเอาตำแหน่งมาจากใน Stage
+        // สร้างดาวบนแมพ
         stars = new List<Star>();
         foreach (Vector2 spawn in stage.StarSpawns)
             stars.Add(new Star(starTexture, spawn));
 
-        timeLeft = 120f;
+        // รีเซ็ตตัวแปรการดรอปและจำนวนดาว
+        totalEnemiesForDrop = enemies.Count + lizards.Count + bats.Count;
+        remainingStarsToDrop = Math.Min(2, totalEnemiesForDrop);
+        collectedStarsCount = 0;
 
+        timeLeft = 120f;
         currentHealth = maxHealth;
 
         UpdateCameraImmediate();

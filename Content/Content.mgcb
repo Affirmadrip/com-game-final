@@ -19,6 +19,18 @@
 /processorParam:Quality=Best
 /build:Audio/dash.wav
 
+#begin Audio/dash.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/dash.wav
+
+#begin Audio/hurt.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/hurt.wav
+
 #begin Audio/hurt.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
@@ -30,6 +42,18 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:Audio/jump.wav
+
+#begin Audio/jump.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/jump.wav
+
+#begin Audio/starcorrect.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Audio/starcorrect.wav
 
 #begin Enemies/bat/bat_atk.png
 /importer:TextureImporter
