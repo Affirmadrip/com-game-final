@@ -61,7 +61,6 @@ namespace GalactaJumperMo.Classes
             Position.X = basePosition.X;
             Position.Y = basePosition.Y + (float)Math.Sin(sineTimer) * waveAmplitude;
 
-            // 3. ป้องกันการชนพื้น
             foreach (Rectangle platform in stage.Platforms)
             {
                 if (Bounds.Intersects(platform))

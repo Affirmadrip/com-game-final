@@ -26,6 +26,7 @@ namespace GalactaJumperMo.Classes
 
         public List<Vector2> EnemySpawns = new List<Vector2>();
         public List<Vector2> LizardSpawns = new List<Vector2>();
+        public List<Vector2> BatSpawns = new List<Vector2>();
 
         public Vector2 PlayerSpawn;
         public int VoidY;
@@ -337,13 +338,13 @@ namespace GalactaJumperMo.Classes
 
         private void TryAddEnemyOnPlatform(int startX, int groundY, int widthTiles)
         {
-            if (widthTiles < 4) return;
+            if (widthTiles < 5) return;
 
             if (rng.NextDouble() > 0.35) return;
 
             // keep enemy away from edges
-            int minOffset = 1;
-            int maxOffset = widthTiles - 2;
+            int minOffset = 2;
+            int maxOffset = widthTiles - 3;
             if (maxOffset < minOffset) return;
 
             int tileOffset = rng.Next(minOffset, maxOffset + 1);
@@ -351,7 +352,12 @@ namespace GalactaJumperMo.Classes
             float enemyX = startX + tileOffset * TileSize;
             float enemyY = groundY - 30; // fits the enemy landing logic, and hitbox
 
-            if (rng.NextDouble() < 0.40) //  40% Lizard
+            double roll = rng.NextDouble();
+            if (roll < 0.30) 
+            {
+                BatSpawns.Add(new Vector2(enemyX, enemyY - 50));
+            }
+            else if (roll < 0.65) 
             {
                 LizardSpawns.Add(new Vector2(enemyX, enemyY));
             }

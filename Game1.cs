@@ -35,6 +35,7 @@ public class Game1 : Game
     private Player player;
     private List<Enemy> enemies;
     private List<EnemyLizard> lizards;
+    private List<EnemyBat> bats;
 
     private Texture2D pixel;
     private Texture2D tilemap;
@@ -42,6 +43,8 @@ public class Game1 : Game
     private Texture2D ghostTexture;
     private Texture2D lizardWalkTex;
     private Texture2D lizardTongueTex;
+    private Texture2D batIdleTex; 
+    private Texture2D batAtkTex;
     private SpriteFont font;
 
     private int maxHealth = 3;
@@ -77,10 +80,11 @@ public class Game1 : Game
     private void SetFullscreenMode()
     {
         DisplayMode d = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
-        _graphics.HardwareModeSwitch = true;
+        _graphics.HardwareModeSwitch = false; 
         _graphics.IsFullScreen = true;
         _graphics.PreferredBackBufferWidth = d.Width;
         _graphics.PreferredBackBufferHeight = d.Height;
+        _graphics.ApplyChanges();
     }
 
     protected override void Initialize()
@@ -109,6 +113,8 @@ public class Game1 : Game
         ghostTexture = Content.Load<Texture2D>("Enemies/ghost/ghost_sprites");
         lizardWalkTex = Content.Load<Texture2D>("Enemies/lizard/lizard_walk");
         lizardTongueTex = Content.Load<Texture2D>("Enemies/lizard/lizard_tongue");
+        batIdleTex = Content.Load<Texture2D>("Enemies/bat/bat_idle");
+        batAtkTex = Content.Load<Texture2D>("Enemies/bat/bat_atk");
         _titleFont = Content.Load<SpriteFont>("Fonts/TitleFont");
         _menuFont = Content.Load<SpriteFont>("Fonts/MenuFont");
 
@@ -315,6 +321,34 @@ public class Game1 : Game
                 }
             }
         }
+        //bat
+        for (int i = bats.Count - 1; i >= 0; i--)
+        {
+            var bat = bats[i];
+            bat.Update(gameTime, player.Position);
+
+            if (player.Bounds.Intersects(bat.Bounds))
+            {
+                if (player.getDashingState)
+                {
+                    bats.RemoveAt(i); 
+                    continue;
+                }
+                else if (!player.IsInvincible)
+                {
+                    currentHealth--;
+                    sfxHurt.Play();
+                    player.TriggerIncinvincible();
+                    shakeTimer = shakeDuration;
+
+                    if (currentHealth <= 0)
+                    {
+                        TriggerGameOver("Defeated by a bat!");
+                        return;
+                    }
+                }
+            }
+        }
 
 
         if (shakeTimer > 0f)
@@ -420,8 +454,11 @@ public class Game1 : Game
         //lizard
         foreach (var liz in lizards)
         liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
+        //bat
+        foreach (var bat in bats)
+            bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
 
-    if (player.Visible)
+        if (player.Visible)
         {
             Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
 
@@ -469,6 +506,10 @@ public class Game1 : Game
         lizards = new List<EnemyLizard>();
         foreach (Vector2 spawn in stage.LizardSpawns)
             lizards.Add(new EnemyLizard(spawn));
+
+        bats = new List<EnemyBat>();
+        foreach (Vector2 spawn in stage.BatSpawns)
+            bats.Add(new EnemyBat(spawn));
 
         timeLeft = 120f;
 
