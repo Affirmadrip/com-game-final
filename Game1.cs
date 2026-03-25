@@ -36,6 +36,10 @@ public class Game1 : Game
     private List<Enemy> enemies;
     private List<EnemyLizard> lizards;
     private List<EnemyBat> bats;
+    
+    // เพิ่ม List ดาวและรูปดาว
+    private Texture2D starTexture;
+    private List<Star> stars;
 
     private Texture2D pixel;
     private Texture2D tilemap;
@@ -109,6 +113,9 @@ public class Game1 : Game
         sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
         sfxJump = Content.Load<SoundEffect>("Audio/jump");
         sfxDash = Content.Load<SoundEffect>("Audio/dash");
+
+        // โหลดรูปดาว
+        starTexture = Content.Load<Texture2D>("Star/starcoin");
 
         ghostTexture = Content.Load<Texture2D>("Enemies/ghost/ghost_sprites");
         lizardWalkTex = Content.Load<Texture2D>("Enemies/lizard/lizard_walk");
@@ -259,6 +266,18 @@ public class Game1 : Game
 
         if (player.JustJumped) sfxJump.Play();
         if (player.JustDashed) sfxDash.Play();
+        
+        // เช็คเก็บดาว
+        foreach (var star in stars)
+        {
+            if (!star.IsCollected && player.Bounds.Intersects(star.Bounds))
+            {
+                star.IsCollected = true;
+                
+                // สามารถใส่เสียงเก็บของหรือเปลี่ยนไปด่านถัดไปตรงนี้ได้เลย
+                // TriggerGameOver("Level Complete! You got the star!"); 
+            }
+        }
 
         //ghost
         for (int i = enemies.Count - 1; i >= 0; i--)
@@ -382,8 +401,6 @@ public class Game1 : Game
         float viewportWidth = GraphicsDevice.Viewport.Width / WorldZoom;
         float maxCameraX = Math.Max(0, stage.StageWidthPixels - viewportWidth);
         float cameraX = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
-        // cameraTransform     = Matrix.CreateTranslation(-cameraX, 0, 0)
-        //                     * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
         cameraTransform = Matrix.CreateTranslation(-cameraX + shakeOffset.X, shakeOffset.Y, 0)
                 * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
     }
@@ -457,6 +474,12 @@ public class Game1 : Game
         //bat
         foreach (var bat in bats)
             bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
+            
+        // วาดดาวที่โหลดมาจาก List 
+        foreach (var star in stars)
+        {
+            star.Draw(_spriteBatch);
+        }
 
         if (player.Visible)
         {
@@ -510,6 +533,11 @@ public class Game1 : Game
         bats = new List<EnemyBat>();
         foreach (Vector2 spawn in stage.BatSpawns)
             bats.Add(new EnemyBat(spawn));
+            
+        // สร้างดาวและเอาตำแหน่งมาจากใน Stage
+        stars = new List<Star>();
+        foreach (Vector2 spawn in stage.StarSpawns)
+            stars.Add(new Star(starTexture, spawn));
 
         timeLeft = 120f;
 
