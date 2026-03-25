@@ -27,6 +27,9 @@ namespace GalactaJumperMo.Classes
         public List<Vector2> EnemySpawns = new List<Vector2>();
         public List<Vector2> LizardSpawns = new List<Vector2>();
         public List<Vector2> BatSpawns = new List<Vector2>();
+        
+        // เพิ่ม List สำหรับเก็บตำแหน่งดาว
+        public List<Vector2> StarSpawns = new List<Vector2>();
 
         public Vector2 PlayerSpawn;
         public int VoidY;
@@ -228,6 +231,12 @@ namespace GalactaJumperMo.Classes
             Rectangle endTile = RandomGroundTile();
             AddBlockArea(x, currentGroundY, 14, 2, endTile);
             AddDecorationsOnTop(x, currentGroundY, 14);
+
+            // ---> เพิ่มดาวที่สุดขอบแมพ <---
+            float starX = x + (7 * TileSize);  // ขยับแกน X มา 7 บล็อกให้อยู่กึ่งกลางแพลตฟอร์มสุดท้าย
+            float starY = currentGroundY - 32; // ดันขึ้นจากพื้น 32 พิกเซล (ให้ดาวไม่จมดิน)
+            
+            StarSpawns.Add(new Vector2(starX, starY));
         }
 
         private void BuildFlatSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
