@@ -74,6 +74,7 @@ namespace GalactaJumperMo.Classes
         }
 
         private void UpdateIdle(float dt, Vector2 playerPos)
+        { 
 
             Position.X += speed * direction * dt;
 
