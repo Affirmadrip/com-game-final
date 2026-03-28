@@ -83,26 +83,14 @@ namespace GalactaJumperMo.Classes
 
         public void Draw(SpriteBatch spriteBatch, Texture2D tilemap, Rectangle sourceRect)
         {
-            int tileWidth = sourceRect.Width;
-            int tileHeight = sourceRect.Height;
+            Rectangle dest = new Rectangle(
+                (int)MathF.Round(Position.X),
+                (int)MathF.Round(Position.Y),
+                Width,
+                Height
+            );
 
-            int tilesWide = Math.Max(1, Width / tileWidth);
-            int tilesHigh = Math.Max(1, Height / tileHeight);
-
-            for (int y = 0; y < tilesHigh; y++)
-            {
-                for (int x = 0; x < tilesWide; x++)
-                {
-                    Rectangle dest = new Rectangle(
-                        (int)MathF.Round(Position.X) + x * tileWidth,
-                        (int)MathF.Round(Position.Y) + y * tileHeight,
-                        tileWidth,
-                        tileHeight
-                    );
-
-                    spriteBatch.Draw(tilemap, dest, sourceRect, Color.White);
-                }
-            }
+            spriteBatch.Draw(tilemap, dest, sourceRect, Color.White);
         }
     }
 }

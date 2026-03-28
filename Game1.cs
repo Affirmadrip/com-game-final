@@ -30,20 +30,19 @@ public class Game1 : Game
     private SpriteFont _titleFont;
     private SpriteFont _menuFont;
 
-    // ── In-game ───────────────────────────────────────────────────────────────
     private Stage stage;
     private Player player;
     private List<Enemy> enemies;
     private List<EnemyLizard> lizards;
     private List<EnemyBat> bats;
 
-    // ตัวแปรสำหรับดาวและ UI
+    // variables of star and UI
     private Texture2D starTexture;
     private List<Star> stars;
     private int totalEnemiesForDrop;
     private int remainingStarsToDrop;
     private Random dropRng = new Random();
-    private int collectedStarsCount = 0; // ตัวนับจำนวนดาวที่เก็บได้
+    private int collectedStarsCount = 0; // collected stars
 
     private Texture2D pixel;
     private Texture2D tilemap;
@@ -64,7 +63,7 @@ public class Game1 : Game
     SoundEffect sfxHurt;
     SoundEffect sfxJump;
     SoundEffect sfxDash;
-    SoundEffect sfxStar; // เพิ่มตัวแปรเสียงเก็บดาว
+    SoundEffect sfxStar;
 
     private float shakeTimer = 0f;
     private const float shakeDuration = 0.35f;
@@ -115,13 +114,11 @@ public class Game1 : Game
         tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
 
-        // โหลดเสียง
         sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
         sfxJump = Content.Load<SoundEffect>("Audio/jump");
         sfxDash = Content.Load<SoundEffect>("Audio/dash");
-        sfxStar = Content.Load<SoundEffect>("Audio/starcorrect"); // โหลดเสียงเก็บดาว
+        sfxStar = Content.Load<SoundEffect>("Audio/starcorrect"); 
 
-        // โหลดรูปดาว
         starTexture = Content.Load<Texture2D>("Star/starcoin");
 
         ghostTexture = Content.Load<Texture2D>("Enemies/ghost/ghost_sprites");
@@ -169,7 +166,7 @@ public class Game1 : Game
         _gameState = GameState.Settings;
     }
 
-    // เมธอดจัดการการดรอปดาวเมื่อศัตรูตาย
+    // star drops from enemy
     private void HandleEnemyDeath(Vector2 deathPosition)
     {
         if (totalEnemiesForDrop <= 0) return;
@@ -356,7 +353,7 @@ public class Game1 : Game
             }
         }
 
-        //ghost
+        // ghost
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             Enemy enemy = enemies[i];
@@ -389,7 +386,7 @@ public class Game1 : Game
                 }
             }
         }
-        //lizard
+        // lizard
         for (int i = lizards.Count - 1; i >= 0; i--)
         {
             var liz = lizards[i];
@@ -419,7 +416,7 @@ public class Game1 : Game
                 }
             }
         }
-        //bat
+        // bat
         for (int i = bats.Count - 1; i >= 0; i--)
         {
             var bat = bats[i];
@@ -546,7 +543,7 @@ public class Game1 : Game
         foreach (TileInstance tile in stage.DecorationTiles)
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
 
-        Rectangle movingPlatformSource = new Rectangle(0, 0, 16, 16);
+        Rectangle movingPlatformSource = new Rectangle(0, 112, 48, 32);
 
         foreach (var mp in stage.MovingPlatforms)
             mp.Draw(_spriteBatch, tilemap, movingPlatformSource);
@@ -557,17 +554,22 @@ public class Game1 : Game
         foreach (var mp in stage.MovingPlatforms)
             _spriteBatch.Draw(pixel, mp.Bounds, Color.Blue * 0.4f);
 
-        //ghost
+        // ghost
+
         foreach (Enemy enemy in enemies)
             enemy.Draw(_spriteBatch, ghostTexture);
-        //lizard
+
+        // lizard
+
         foreach (var liz in lizards)
             liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
-        //bat
+
+        // bat
+
         foreach (var bat in bats)
             bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
 
-        // วาดดาว
+        // draw star
         foreach (var star in stars)
         {
             star.Draw(_spriteBatch);
@@ -593,11 +595,11 @@ public class Game1 : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        // วาดเวลา
+        // draw timer
         Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
         _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
 
-        // วาดหัวใจ
+        // draw hearts
         int heartSize = 80;
         int heartPadding = 6;
         for (int i = 0; i < maxHealth; i++)
@@ -606,20 +608,16 @@ public class Game1 : Game
             _spriteBatch.Draw(heart, new Rectangle(20 + i * (heartSize + heartPadding), 55, heartSize, heartSize), Color.White);
         }
 
-        // ------------------------------------------------------------------
-        // --- วาด UI จำนวนดาวที่มุมขวาบน แบบบังคับขนาด ---
-        // ------------------------------------------------------------------
+
         int screenWidth = GraphicsDevice.Viewport.Width;
-        int uiStarSize = 60; // ขนาดคงที่ 60x60 พิกเซล
+        int uiStarSize = 60; 
         Vector2 starUiPos = new Vector2(screenWidth - 160, 20);
 
-        // บังคับสเกลภาพให้พอดีกับกรอบ Rectangle ที่เราตั้งไว้
         _spriteBatch.Draw(starTexture, new Rectangle((int)starUiPos.X, (int)starUiPos.Y, uiStarSize, uiStarSize), Color.White);
 
         string starText = $"x {collectedStarsCount}";
         Vector2 textPos = new Vector2(starUiPos.X + uiStarSize + 10, starUiPos.Y + (uiStarSize / 2) - 15);
         _spriteBatch.DrawString(font, starText, textPos, Color.Yellow);
-        // ------------------------------------------------------------------
 
         _spriteBatch.End();
     }
@@ -644,12 +642,10 @@ public class Game1 : Game
         foreach (Vector2 spawn in stage.BatSpawns)
             bats.Add(new EnemyBat(spawn));
 
-        // สร้างดาวบนแมพ
         stars = new List<Star>();
         foreach (Vector2 spawn in stage.StarSpawns)
             stars.Add(new Star(starTexture, spawn));
 
-        // รีเซ็ตตัวแปรการดรอปและจำนวนดาว
         totalEnemiesForDrop = enemies.Count + lizards.Count + bats.Count;
         remainingStarsToDrop = Math.Min(2, totalEnemiesForDrop);
         collectedStarsCount = 0;
