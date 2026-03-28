@@ -284,7 +284,28 @@ public class Game1 : Game
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+        foreach (var mp in stage.MovingPlatforms)
+             mp.Update(gameTime);
+
+        stage.SyncPlatforms();
+
         player.Update(gameTime, stage);
+
+        foreach (var mp in stage.MovingPlatforms)
+        {
+            Rectangle feet = new Rectangle(
+                player.Bounds.X + 4,
+                player.Bounds.Bottom - 2,
+                player.Bounds.Width - 8,
+                4
+        );
+
+        if (feet.Intersects(mp.Bounds))
+        {
+        player.MoveBy(mp.Delta);
+        break;
+        }
+    }
 
         if (player.JustJumped) sfxJump.Play();
         if (player.JustDashed) sfxDash.Play();
@@ -297,6 +318,29 @@ public class Game1 : Game
                 star.IsCollected = true;
                 collectedStarsCount++;
                 sfxStar.Play(); // เล่นเสียงตอนเก็บดาว
+            }
+        }
+
+        foreach (Rectangle spike in stage.HazardRects)
+        {
+            if (player.Bounds.Intersects(spike) && !player.IsInvincible)
+            {
+                currentHealth--;
+                sfxHurt.Play();
+
+                player.TriggerIncinvincible();
+
+                player.ApplyKnockback(
+                    new Vector2(player.FacingLeft ? 220f : -220f, -260f)
+                );
+
+                if (currentHealth <= 0)
+                {
+                    TriggerGameOver("You died to spikes");
+                    return;
+                }
+
+                break;
             }
         }
 
@@ -489,6 +533,8 @@ public class Game1 : Game
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
         foreach (TileInstance tile in stage.DecorationTiles)
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
+        foreach (var mp in stage.MovingPlatforms)
+            mp.Draw(_spriteBatch, pixel);
         //ghost
         foreach (Enemy enemy in enemies)
             enemy.Draw(_spriteBatch, ghostTexture);
@@ -558,7 +604,7 @@ public class Game1 : Game
 
     private void BuildStageAndActors()
     {
-        stage = new Stage();
+        stage = new Stage(tilemap.Width / 16);
 
         player = new Player();
         player.Position = stage.PlayerSpawn;

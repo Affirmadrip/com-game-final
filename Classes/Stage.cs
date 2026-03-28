@@ -1,6 +1,10 @@
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
 
 namespace GalactaJumperMo.Classes
 {
@@ -21,431 +25,288 @@ namespace GalactaJumperMo.Classes
     public class Stage
     {
         public List<Rectangle> Platforms = new List<Rectangle>();
+        public List<Rectangle> StaticPlatforms = new List<Rectangle>();
+        public List<Rectangle> HazardRects = new List<Rectangle>();
+
         public List<TileInstance> SolidTiles = new List<TileInstance>();
         public List<TileInstance> DecorationTiles = new List<TileInstance>();
 
         public List<Vector2> EnemySpawns = new List<Vector2>();
         public List<Vector2> LizardSpawns = new List<Vector2>();
         public List<Vector2> BatSpawns = new List<Vector2>();
-        
-        // เพิ่ม List สำหรับเก็บตำแหน่งดาว
         public List<Vector2> StarSpawns = new List<Vector2>();
+
+        public List<MovingPlatform> MovingPlatforms = new List<MovingPlatform>();
 
         public Vector2 PlayerSpawn;
         public int VoidY;
         public int TileSize = 16;
         public int StageWidthPixels;
 
-        private readonly Random rng = new Random(42);
+        private int _tilesPerRow;
+        private int _mapWidth = 0;
+        private int _mapHeight = 0;
 
-        // difficulty tuning
-        private const int MAX_STEP_UP_TILES = 4;
-        private const int NORMAL_GAP_MIN = 3;
-        private const int NORMAL_GAP_MAX = 5;
-
-        // island bridge tuning
-        private const int ISLAND_GAP_TOTAL_MIN = 8;
-        private const int ISLAND_GAP_TOTAL_MAX = 9;
-        private const int MAX_JUMP_TO_ISLAND_TILES = 4;
-        private const int MAX_ISLAND_HEIGHT_ABOVE_GROUND = 5;
-
-        private readonly List<Rectangle> purpleTiles = new List<Rectangle>();
-        private readonly List<Rectangle> blueChunkTiles = new List<Rectangle>();
-
-        private readonly List<Rectangle> smallTopDecorTiles = new List<Rectangle>();
-        private readonly List<Rectangle> rootedDecorTiles = new List<Rectangle>();
-        private readonly List<Rectangle> pillarTiles = new List<Rectangle>();
-
-        public Stage()
+        public Stage(int tilesPerRow)
         {
-            BuildTilePools();
-            GenerateStage();
-        }
+            _tilesPerRow = tilesPerRow;
 
-        private Rectangle TileRect(int row, int col)
-        {
-            return new Rectangle(col * TileSize, row * TileSize, TileSize, TileSize);
-        }
+            string baseDir = AppContext.BaseDirectory;
 
-        private void BuildTilePools()
-        {
-            // regular ground
-            for (int row = 0; row <= 3; row++)
+            string[] candidates = new[]
             {
-                for (int col = 7; col <= 11; col++)
+                Path.Combine(baseDir, "com-game-final.tmx"),
+                Path.Combine(baseDir, "Content", "Maps", "com-game-final.tmx"),
+                Path.Combine(baseDir, "Maps", "com-game-final.tmx")
+            };
+
+            string tmxPath = candidates.FirstOrDefault(File.Exists);
+
+            if (tmxPath == null)
+                throw new FileNotFoundException("Could not find com-game-final.tmx.");
+
+            LoadFromTmx(tmxPath);
+            AddMapBounds();
+            SyncPlatforms();
+            SetDefaultPlayerSpawn();
+        }
+
+        public void SyncPlatforms()
+        {
+            Platforms.Clear();
+            Platforms.AddRange(StaticPlatforms);
+
+            foreach (MovingPlatform mp in MovingPlatforms)
+                Platforms.Add(mp.Bounds);
+        }
+
+        private void LoadFromTmx(string tmxPath)
+        {
+            XDocument doc = XDocument.Load(tmxPath);
+            XElement map = doc.Element("map");
+
+            if (map == null)
+                throw new Exception("Invalid TMX: missing <map> root.");
+
+            _mapWidth = ParseInt(map.Attribute("width")?.Value, 0);
+            _mapHeight = ParseInt(map.Attribute("height")?.Value, 0);
+            TileSize = ParseInt(map.Attribute("tilewidth")?.Value, 16);
+
+            StageWidthPixels = _mapWidth * TileSize;
+            VoidY = _mapHeight * TileSize;
+
+            foreach (XElement layer in map.Elements("layer"))
+            {
+                string name = (layer.Attribute("name")?.Value ?? "").Trim().ToLowerInvariant();
+                XElement dataElement = layer.Element("data");
+                if (dataElement == null) continue;
+
+                string encoding = dataElement.Attribute("encoding")?.Value ?? "";
+                if (encoding != "csv")
+                    throw new Exception("TMX layer data must use CSV encoding.");
+
+                int[] gids = ParseCsv(dataElement.Value);
+
+                if (name == "collisions")
                 {
-                    purpleTiles.Add(TileRect(row, col));
+                    LoadCollisionLayer(gids);
+                }
+                else if (name == "hazards")
+                {
+                    LoadHazardLayer(gids);
+                }
+                else if (name == "fg")
+                {
+                    LoadVisualLayer(gids, SolidTiles, false);
                 }
             }
-            purpleTiles.Add(TileRect(4, 10));
-            purpleTiles.Add(TileRect(4, 11));
 
-            // island-style floating chunks
-            blueChunkTiles.Add(TileRect(4, 7));
-            blueChunkTiles.Add(TileRect(4, 8));
-            blueChunkTiles.Add(TileRect(4, 9));
-
-            blueChunkTiles.Add(TileRect(11, 7));
-            blueChunkTiles.Add(TileRect(11, 8));
-            blueChunkTiles.Add(TileRect(11, 9));
-            blueChunkTiles.Add(TileRect(12, 7));
-            blueChunkTiles.Add(TileRect(12, 8));
-            blueChunkTiles.Add(TileRect(12, 9));
-            blueChunkTiles.Add(TileRect(13, 7));
-            blueChunkTiles.Add(TileRect(13, 8));
-            blueChunkTiles.Add(TileRect(13, 9));
-
-            // top decorations
-            smallTopDecorTiles.Add(TileRect(0, 15));
-            smallTopDecorTiles.Add(TileRect(0, 16));
-            smallTopDecorTiles.Add(TileRect(0, 17));
-            smallTopDecorTiles.Add(TileRect(1, 15));
-            smallTopDecorTiles.Add(TileRect(1, 16));
-            smallTopDecorTiles.Add(TileRect(1, 17));
-            smallTopDecorTiles.Add(TileRect(2, 15));
-
-            rootedDecorTiles.Add(TileRect(0, 13));
-            rootedDecorTiles.Add(TileRect(0, 14));
-            rootedDecorTiles.Add(TileRect(1, 13));
-            rootedDecorTiles.Add(TileRect(1, 14));
-            rootedDecorTiles.Add(TileRect(2, 13));
-            rootedDecorTiles.Add(TileRect(2, 14));
-
-            // support pillars
-            pillarTiles.Add(TileRect(0, 12));
-            pillarTiles.Add(TileRect(1, 12));
-            pillarTiles.Add(TileRect(2, 12));
-            pillarTiles.Add(TileRect(3, 12));
-        }
-
-        private Rectangle RandomFrom(List<Rectangle> pool)
-        {
-            return pool[rng.Next(pool.Count)];
-        }
-
-        private Rectangle RandomGroundTile()
-        {
-            return RandomFrom(purpleTiles);
-        }
-
-        private Rectangle RandomIslandTile()
-        {
-            return RandomFrom(blueChunkTiles);
-        }
-
-        private void GenerateStage()
-        {
-            int tile = TileSize;
-            StageWidthPixels = 260 * tile;
-            VoidY = 560;
-
-            int currentGroundY = 416;
-            AddInvisibleWall(-32, 0, 32, 2000);
-
-            Rectangle startTile = RandomGroundTile();
-            AddBlockArea(0, currentGroundY, 10, 2, startTile);
-            AddDecorationsOnTop(0, currentGroundY, 10);
-            PlayerSpawn = new Vector2(48, currentGroundY - 32);
-
-            int x = 10 * tile;
-
-            while (x < StageWidthPixels - 30 * tile)
+            foreach (XElement objectGroup in map.Elements("objectgroup"))
             {
-                int widthTiles = rng.Next(4, 8);
+                string name = (objectGroup.Attribute("name")?.Value ?? "").Trim().ToLowerInvariant();
 
-                int nextGroundY = currentGroundY + rng.Next(-2, 3) * tile;
-                nextGroundY = Clamp(nextGroundY, 352, 432);
+                if (name == "moving_platforms")
+                    LoadMovingPlatforms(objectGroup);
+            }
+        }
 
-                int riseTiles = (currentGroundY - nextGroundY) / tile;
-                if (riseTiles > MAX_STEP_UP_TILES)
-                    nextGroundY = currentGroundY - MAX_STEP_UP_TILES * tile;
-
-                Rectangle sectionTile = RandomGroundTile();
-
-                int shapeRoll = rng.Next(100);
-                if (shapeRoll < 45)
-                    BuildFlatSection(x, nextGroundY, widthTiles, sectionTile);
-                else if (shapeRoll < 70)
-                    BuildStepUpSection(x, nextGroundY, widthTiles, sectionTile);
-                else if (shapeRoll < 88)
-                    BuildStepDownSection(x, nextGroundY, widthTiles, sectionTile);
-                else
-                    BuildRaisedMiddleSection(x, nextGroundY, widthTiles, sectionTile);
-                
-                TryAddEnemyOnPlatform(x, nextGroundY, widthTiles);
-                AddUpperMiniPlatforms(x, nextGroundY, widthTiles);
-
-                bool useIslandBridge = rng.NextDouble() < 0.65;
-
-                if (useIslandBridge)
+        private void LoadCollisionLayer(int[] gids)
+        {
+            for (int y = 0; y < _mapHeight; y++)
+            {
+                for (int x = 0; x < _mapWidth; x++)
                 {
-                    int totalGapTiles = rng.Next(ISLAND_GAP_TOTAL_MIN, ISLAND_GAP_TOTAL_MAX + 1);
-                    int islandWidthTiles = rng.Next(3, 5); // 3-4 blocks wide
+                    int gid = gids[y * _mapWidth + x];
+                    if (gid == 0) continue;
 
-                    int leftJump = rng.Next(3, MAX_JUMP_TO_ISLAND_TILES + 1);
-                    int rightJump = totalGapTiles - leftJump - islandWidthTiles;
-
-                    if (rightJump < 2)
-                    {
-                        rightJump = 2;
-                        leftJump = totalGapTiles - islandWidthTiles - rightJump;
-                    }
-
-                    if (leftJump < 2)
-                    {
-                        leftJump = 2;
-                        rightJump = totalGapTiles - islandWidthTiles - leftJump;
-                    }
-
-                    int islandY = nextGroundY - rng.Next(1, MAX_ISLAND_HEIGHT_ABOVE_GROUND + 1) * tile;
-                    int islandX = x + widthTiles * tile + leftJump * tile;
-
-                    // standalone island
-                    Rectangle islandTile = RandomIslandTile();
-                    int islandHeightTiles = rng.Next(1, 3); // 1 or 2 tall
-                    AddBlockArea(islandX, islandY, islandWidthTiles, islandHeightTiles, islandTile);
-                    AddDecorationsOnTop(islandX, islandY, islandWidthTiles);
-
-                    // some islands get a pillar into the void
-                    if (rng.NextDouble() < 0.35)
-                    {
-                        int pillarStartY = islandY + islandHeightTiles * tile;
-                        int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / tile);
-                        int pillarX = islandX + (islandWidthTiles / 2) * tile;
-                        AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
-                    }
-
-                    x += widthTiles * tile;
-                    x += totalGapTiles * tile;
-                }
-                else
-                {
-                    int gapTiles = rng.Next(NORMAL_GAP_MIN, NORMAL_GAP_MAX + 1);
-                    x += widthTiles * tile;
-                    x += gapTiles * tile;
-                }
-
-                currentGroundY = nextGroundY;
-            }
-
-            Rectangle endTile = RandomGroundTile();
-            AddBlockArea(x, currentGroundY, 14, 2, endTile);
-            AddDecorationsOnTop(x, currentGroundY, 14);
-
-            // ---> เพิ่มดาวที่สุดขอบแมพ <---
-            float starX = x + (7 * TileSize);  // ขยับแกน X มา 7 บล็อกให้อยู่กึ่งกลางแพลตฟอร์มสุดท้าย
-            float starY = currentGroundY - 32; // ดันขึ้นจากพื้น 32 พิกเซล (ให้ดาวไม่จมดิน)
-            
-            StarSpawns.Add(new Vector2(starX, starY));
-        }
-
-        private void BuildFlatSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
-        {
-            AddBlockArea(startX, groundY, widthTiles, 2, tileSrc);
-            AddDecorationsOnTop(startX, groundY, widthTiles);
-
-            if (rng.NextDouble() < 0.20)
-            {
-                int pillarX = startX + rng.Next(1, Math.Max(2, widthTiles - 1)) * TileSize;
-                int pillarStartY = groundY + 2 * TileSize;
-                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
-                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
-            }
-        }
-
-        private void BuildStepUpSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
-        {
-            int leftWidth = Math.Max(3, widthTiles / 2);
-            int rightWidth = Math.Max(2, widthTiles - leftWidth);
-            int highY = groundY - 2 * TileSize;
-
-            AddBlockArea(startX, groundY, leftWidth, 2, tileSrc);
-            AddBlockArea(startX + leftWidth * TileSize, highY, rightWidth, 4, tileSrc);
-
-            AddDecorationsOnTop(startX, groundY, leftWidth);
-            AddDecorationsOnTop(startX + leftWidth * TileSize, highY, rightWidth);
-
-            if (rng.NextDouble() < 0.30)
-            {
-                int pillarX = startX + leftWidth * TileSize + (rightWidth / 2) * TileSize;
-                int pillarStartY = highY + 4 * TileSize;
-                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
-                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
-            }
-        }
-
-        private void BuildStepDownSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
-        {
-            int leftWidth = Math.Max(2, widthTiles / 2);
-            int rightWidth = Math.Max(3, widthTiles - leftWidth);
-            int highY = groundY - 2 * TileSize;
-
-            AddBlockArea(startX, highY, leftWidth, 4, tileSrc);
-            AddBlockArea(startX + leftWidth * TileSize, groundY, rightWidth, 2, tileSrc);
-
-            AddDecorationsOnTop(startX, highY, leftWidth);
-            AddDecorationsOnTop(startX + leftWidth * TileSize, groundY, rightWidth);
-
-            if (rng.NextDouble() < 0.30)
-            {
-                int pillarX = startX + (leftWidth / 2) * TileSize;
-                int pillarStartY = highY + 4 * TileSize;
-                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
-                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
-            }
-        }
-
-        private void BuildRaisedMiddleSection(int startX, int groundY, int widthTiles, Rectangle tileSrc)
-        {
-            int left = Math.Max(2, widthTiles / 3);
-            int middle = Math.Max(2, widthTiles / 3);
-            int right = Math.Max(2, widthTiles - left - middle);
-            int middleY = groundY - 2 * TileSize;
-
-            AddBlockArea(startX, groundY, left, 2, tileSrc);
-            AddBlockArea(startX + left * TileSize, middleY, middle, 4, tileSrc);
-            AddBlockArea(startX + (left + middle) * TileSize, groundY, right, 2, tileSrc);
-
-            AddDecorationsOnTop(startX, groundY, left);
-            AddDecorationsOnTop(startX + left * TileSize, middleY, middle);
-            AddDecorationsOnTop(startX + (left + middle) * TileSize, groundY, right);
-
-            if (rng.NextDouble() < 0.35)
-            {
-                int pillarX = startX + left * TileSize + (middle / 2) * TileSize;
-                int pillarStartY = middleY + 4 * TileSize;
-                int pillarHeightTiles = Math.Max(2, (VoidY - pillarStartY) / TileSize);
-                AddSolidPillar(pillarX, pillarStartY, pillarHeightTiles, RandomFrom(pillarTiles));
-            }
-        }
-
-        private void AddUpperMiniPlatforms(int sectionX, int groundY, int sectionWidthTiles)
-        {
-            if (sectionWidthTiles < 4) return;
-
-            if (rng.NextDouble() > 0.25) return;
-
-            int miniCount = rng.Next(1, 3); // 1 or 2 mini platforms
-
-            for (int i = 0; i < miniCount; i++)
-            {
-                int widthTiles = rng.Next(2, 5); // 2-4 blocks wide
-
-                if (sectionWidthTiles <= widthTiles + 1)
-                    continue;
-
-                int px = sectionX + rng.Next(1, sectionWidthTiles - widthTiles) * TileSize;
-
-                // reachable height
-                int py = groundY - rng.Next(4, 6) * TileSize;
-
-                Rectangle tileSrc = RandomIslandTile();
-                AddBlockArea(px, py, widthTiles, 1, tileSrc);
-                AddDecorationsOnTop(px, py, widthTiles);
-            }
-        }        
-
-        private void TryAddEnemyOnPlatform(int startX, int groundY, int widthTiles)
-        {
-            if (widthTiles < 5) return;
-
-            if (rng.NextDouble() > 0.35) return;
-
-            // keep enemy away from edges
-            int minOffset = 2;
-            int maxOffset = widthTiles - 3;
-            if (maxOffset < minOffset) return;
-
-            int tileOffset = rng.Next(minOffset, maxOffset + 1);
-
-            float enemyX = startX + tileOffset * TileSize;
-            float enemyY = groundY - 30; // fits the enemy landing logic, and hitbox
-
-            double roll = rng.NextDouble();
-            if (roll < 0.30) 
-            {
-                BatSpawns.Add(new Vector2(enemyX, enemyY - 50));
-            }
-            else if (roll < 0.65) 
-            {
-                LizardSpawns.Add(new Vector2(enemyX, enemyY));
-            }
-            else 
-            {
-                EnemySpawns.Add(new Vector2(enemyX, enemyY));
-            }
-        }
-
-        private void AddBlockArea(int x, int y, int widthTiles, int heightTiles, Rectangle src)
-        {
-            for (int row = 0; row < heightTiles; row++)
-            {
-                for (int col = 0; col < widthTiles; col++)
-                {
                     Rectangle dest = new Rectangle(
-                        x + col * TileSize,
-                        y + row * TileSize,
+                        x * TileSize,
+                        y * TileSize,
                         TileSize,
                         TileSize
                     );
 
-                    SolidTiles.Add(new TileInstance(src, dest, true));
-                    Platforms.Add(dest);
+                    StaticPlatforms.Add(dest);
                 }
             }
         }
 
-        private void AddSolidPillar(int x, int startY, int heightTiles, Rectangle pillarSrc)
+        private void LoadHazardLayer(int[] gids)
         {
-            for (int i = 0; i < heightTiles; i++)
+            for (int y = 0; y < _mapHeight; y++)
             {
-                Rectangle dest = new Rectangle(
-                    x,
-                    startY + i * TileSize,
-                    TileSize,
-                    TileSize
-                );
+                for (int x = 0; x < _mapWidth; x++)
+                {
+                    int gid = gids[y * _mapWidth + x];
+                    if (gid == 0) continue;
 
-                SolidTiles.Add(new TileInstance(pillarSrc, dest, true));
-                Platforms.Add(dest);
+                    Rectangle dest = new Rectangle(
+                        x * TileSize,
+                        y * TileSize,
+                        TileSize,
+                        TileSize
+                    );
+
+                    HazardRects.Add(dest);
+                }
             }
         }
 
-        private void AddDecorationsOnTop(int startX, int groundY, int widthTiles)
+        private void LoadVisualLayer(int[] gids, List<TileInstance> target, bool isSolid)
         {
-            if (widthTiles < 2) return;
-
-            int decorCount = Math.Max(1, widthTiles / 5);
-
-            for (int i = 0; i < decorCount; i++)
+            for (int y = 0; y < _mapHeight; y++)
             {
-                int x = startX + rng.Next(0, widthTiles) * TileSize;
+                for (int x = 0; x < _mapWidth; x++)
+                {
+                    int gid = gids[y * _mapWidth + x];
+                    if (gid == 0) continue;
 
-                Rectangle src = rng.NextDouble() < 0.75
-                    ? RandomFrom(smallTopDecorTiles)
-                    : RandomFrom(rootedDecorTiles);
+                    Rectangle src = GidToSourceRect(gid);
+                    Rectangle dest = new Rectangle(
+                        x * TileSize,
+                        y * TileSize,
+                        TileSize,
+                        TileSize
+                    );
 
-                Rectangle dest = new Rectangle(
-                    x,
-                    groundY - TileSize,
-                    TileSize,
-                    TileSize
-                );
-
-                DecorationTiles.Add(new TileInstance(src, dest, false));
+                    target.Add(new TileInstance(src, dest, isSolid));
+                }
             }
         }
 
-        private void AddInvisibleWall(int x, int y, int width, int height)
+        private void LoadMovingPlatforms(XElement objectGroup)
         {
-            Platforms.Add(new Rectangle(x, y, width, height));
+            foreach (XElement obj in objectGroup.Elements("object"))
+            {
+                float x = ParseFloat(obj.Attribute("x")?.Value, 0f);
+                float y = ParseFloat(obj.Attribute("y")?.Value, 0f);
+                int width = (int)MathF.Round(ParseFloat(obj.Attribute("width")?.Value, 48f));
+                int height = (int)MathF.Round(ParseFloat(obj.Attribute("height")?.Value, 16f));
+
+                string axis = "horizontal";
+                float range = 96f;
+                float speed = 60f;
+
+                XElement props = obj.Element("properties");
+                if (props != null)
+                {
+                    foreach (XElement p in props.Elements("property"))
+                    {
+                        string propName = p.Attribute("name")?.Value ?? "";
+                        string propValue = p.Attribute("value")?.Value ?? "";
+
+                        if (propName == "axis")
+                            axis = propValue;
+                        else if (propName == "range")
+                            range = ParseFloat(propValue, 96f);
+                        else if (propName == "speed")
+                            speed = ParseFloat(propValue, 60f);
+                    }
+                }
+
+                MovingPlatforms.Add(
+                    new MovingPlatform(
+                        new Vector2(x, y),
+                        width,
+                        height,
+                        axis,
+                        range,
+                        speed
+                    )
+                );
+            }
         }
 
-        private int Clamp(int value, int min, int max)
+        private void AddMapBounds()
         {
-            if (value < min) return min;
-            if (value > max) return max;
-            return value;
+            int wallHeight = (_mapHeight * TileSize) + 2000;
+
+            StaticPlatforms.Add(new Rectangle(-32, 0, 32, wallHeight));
+            StaticPlatforms.Add(new Rectangle(StageWidthPixels, 0, 32, wallHeight));
+        }
+
+        private void SetDefaultPlayerSpawn()
+        {
+            PlayerSpawn = new Vector2(48, 384);
+
+            int spawnX = 3 * TileSize;
+            Rectangle? bestGround = null;
+
+            foreach (Rectangle rect in StaticPlatforms)
+            {
+                bool overlapsSpawnX =
+                    spawnX >= rect.Left - 2 &&
+                    spawnX <= rect.Right + 2;
+
+                if (!overlapsSpawnX)
+                    continue;
+
+                if (bestGround == null || rect.Top < bestGround.Value.Top)
+                    bestGround = rect;
+            }
+
+            if (bestGround.HasValue)
+            {
+                PlayerSpawn = new Vector2(
+                    spawnX,
+                    bestGround.Value.Top - 32
+                );
+            }
+        }
+
+        private Rectangle GidToSourceRect(int gid)
+        {
+            int cleanGid = gid & 0x1FFFFFFF;
+            int local = cleanGid - 1;
+
+            if (local < 0) local = 0;
+
+            int sx = (local % _tilesPerRow) * TileSize;
+            int sy = (local / _tilesPerRow) * TileSize;
+
+            return new Rectangle(sx, sy, TileSize, TileSize);
+        }
+
+        private static int[] ParseCsv(string csv)
+        {
+            return csv
+                .Split(new[] { ',', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => int.Parse(s.Trim(), CultureInfo.InvariantCulture))
+                .ToArray();
+        }
+
+        private static int ParseInt(string text, int fallback)
+        {
+            return int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value)
+                ? value
+                : fallback;
+        }
+
+        private static float ParseFloat(string text, float fallback)
+        {
+            return float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
+                ? value
+                : fallback;
         }
     }
 }

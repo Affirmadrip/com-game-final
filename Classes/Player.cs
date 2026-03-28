@@ -244,6 +244,17 @@ namespace GalactaJumperMo.Classes
             flickerTimer = 0f;
         }
 
+        public void MoveBy(Vector2 delta)
+        {
+            Position += delta;
+        }
+
+        public void ApplyKnockback(Vector2 force)
+        {
+            velocity = force;
+            isOnGround = false;
+            isDashing = false;
+        }
         public void ResetVelocity()
         {
             velocity = Vector2.Zero;
