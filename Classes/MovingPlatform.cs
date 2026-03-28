@@ -21,9 +21,12 @@ namespace GalactaJumperMo.Classes
         private int _direction = 1;
 
         public Rectangle Bounds =>
-            new Rectangle((int)MathF.Round(Position.X),
-                          (int)MathF.Round(Position.Y),
-                          Width, Height);
+            new Rectangle(
+                (int)MathF.Round(Position.X),
+                (int)MathF.Round(Position.Y),
+                Width,
+                Height
+            );
 
         public MovingPlatform(Vector2 startPosition, int width, int height,
                               string axis, float range, float speed)
@@ -78,9 +81,28 @@ namespace GalactaJumperMo.Classes
             Delta = Position - PreviousPosition;
         }
 
-        public void Draw(SpriteBatch spriteBatch, Texture2D pixel)
+        public void Draw(SpriteBatch spriteBatch, Texture2D tilemap, Rectangle sourceRect)
         {
-            spriteBatch.Draw(pixel, Bounds, new Color(200, 200, 220));
+            int tileWidth = sourceRect.Width;
+            int tileHeight = sourceRect.Height;
+
+            int tilesWide = Math.Max(1, Width / tileWidth);
+            int tilesHigh = Math.Max(1, Height / tileHeight);
+
+            for (int y = 0; y < tilesHigh; y++)
+            {
+                for (int x = 0; x < tilesWide; x++)
+                {
+                    Rectangle dest = new Rectangle(
+                        (int)MathF.Round(Position.X) + x * tileWidth,
+                        (int)MathF.Round(Position.Y) + y * tileHeight,
+                        tileWidth,
+                        tileHeight
+                    );
+
+                    spriteBatch.Draw(tilemap, dest, sourceRect, Color.White);
+                }
+            }
         }
     }
 }

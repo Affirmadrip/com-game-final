@@ -293,14 +293,14 @@ public class Game1 : Game
 
         foreach (var mp in stage.MovingPlatforms)
         {
-            Rectangle feet = new Rectangle(
+            Rectangle platformFeet = new Rectangle(
                 player.Bounds.X + 4,
                 player.Bounds.Bottom - 2,
                 player.Bounds.Width - 8,
                 4
         );
 
-        if (feet.Intersects(mp.Bounds))
+        if (platformFeet.Intersects(mp.Bounds))
         {
         player.MoveBy(mp.Delta);
         break;
@@ -310,25 +310,37 @@ public class Game1 : Game
         if (player.JustJumped) sfxJump.Play();
         if (player.JustDashed) sfxDash.Play();
 
-        // เช็คการเก็บดาวและบวกจำนวน
         foreach (var star in stars)
         {
             if (!star.IsCollected && player.Bounds.Intersects(star.Bounds))
             {
                 star.IsCollected = true;
                 collectedStarsCount++;
-                sfxStar.Play(); // เล่นเสียงตอนเก็บดาว
+                sfxStar.Play(); 
             }
         }
+        Rectangle feet = new Rectangle(
+            player.Bounds.X + 6,
+            player.Bounds.Bottom - 4,
+            player.Bounds.Width - 12,
+            6
+        );
 
         foreach (Rectangle spike in stage.HazardRects)
         {
-            if (player.Bounds.Intersects(spike) && !player.IsInvincible)
+            Rectangle spikeHitbox = new Rectangle(
+                spike.X + 1,
+                spike.Y + 1,
+                spike.Width - 2,
+                spike.Height - 2
+            );
+
+            if (player.Bounds.Intersects(spikeHitbox) && !player.IsInvincible)
             {
                 currentHealth--;
                 sfxHurt.Play();
-
                 player.TriggerIncinvincible();
+                shakeTimer = shakeDuration;
 
                 player.ApplyKnockback(
                     new Vector2(player.FacingLeft ? 220f : -220f, -260f)
@@ -533,8 +545,18 @@ public class Game1 : Game
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
         foreach (TileInstance tile in stage.DecorationTiles)
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
+
+        Rectangle movingPlatformSource = new Rectangle(0, 0, 16, 16);
+
         foreach (var mp in stage.MovingPlatforms)
-            mp.Draw(_spriteBatch, pixel);
+            mp.Draw(_spriteBatch, tilemap, movingPlatformSource);
+
+        foreach (Rectangle spike in stage.HazardRects)
+            _spriteBatch.Draw(pixel, spike, Color.Red * 0.4f);
+
+        foreach (var mp in stage.MovingPlatforms)
+            _spriteBatch.Draw(pixel, mp.Bounds, Color.Blue * 0.4f);
+
         //ghost
         foreach (Enemy enemy in enemies)
             enemy.Draw(_spriteBatch, ghostTexture);
