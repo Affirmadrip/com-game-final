@@ -548,11 +548,13 @@ public class Game1 : Game
         foreach (var mp in stage.MovingPlatforms)
             mp.Draw(_spriteBatch, tilemap, movingPlatformSource);
 
-        foreach (Rectangle spike in stage.HazardRects)
-            _spriteBatch.Draw(pixel, spike, Color.Red * 0.4f);
+        // hazard debug
+        // foreach (Rectangle spike in stage.HazardRects)
+        //     _spriteBatch.Draw(pixel, spike, Color.Red * 0.4f);
 
-        foreach (var mp in stage.MovingPlatforms)
-            _spriteBatch.Draw(pixel, mp.Bounds, Color.Blue * 0.4f);
+        // moving platform debug
+        // foreach (var mp in stage.MovingPlatforms)
+        //     _spriteBatch.Draw(pixel, mp.Bounds, Color.Blue * 0.4f);
 
         // ghost
 
