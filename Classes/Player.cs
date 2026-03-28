@@ -1,5 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System;
+
 namespace GalactaJumperMo.Classes
 {
 
@@ -9,7 +11,7 @@ namespace GalactaJumperMo.Classes
         public Vector2 Position;
         private Vector2 velocity;
 
-        private float speed = 220f;
+        private float speed = 320f;
         private float jumpForce = -430f;
         private float gravity = 1000f;
 
@@ -84,12 +86,25 @@ namespace GalactaJumperMo.Classes
 
             if (!isDashing)
             {
-                if (k.IsKeyDown(Keys.A))
-                    velocity.X = -speed;
+                float acceleration = 900f;
+                float targetSpeed = 0f;
+                if (k.IsKeyDown(Keys.A)) {
+                    targetSpeed = -speed;
+                }
                 else if (k.IsKeyDown(Keys.D))
-                    velocity.X = speed;
-                else
-                    velocity.X = 0;
+                {
+                    targetSpeed = speed;
+                } 
+                if (Math.Abs(targetSpeed - velocity.X) <= acceleration * dt) {
+                    velocity.X = targetSpeed;
+                }
+                else if (isOnGround)
+                {
+                    velocity.X = (velocity.X + Math.Sign(targetSpeed - velocity.X) * acceleration * dt) * 0.9f;
+                }
+                else {
+                    velocity.X = velocity.X + Math.Sign(targetSpeed - velocity.X) * acceleration * dt;
+                }
 
                 if (k.IsKeyDown(Keys.Space) && isOnGround)
                 {
@@ -235,6 +250,12 @@ namespace GalactaJumperMo.Classes
             isOnGround = false;
         }
 
-
+        public void OnEnemyContact()
+        {
+            velocity.Y = jumpForce * 0.8f;
+            isDashing = false;
+            dashTimer = 0f;
+            dashCooldownTimer = 0f;
+        }
     }
 }

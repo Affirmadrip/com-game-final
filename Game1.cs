@@ -36,7 +36,7 @@ public class Game1 : Game
     private List<Enemy> enemies;
     private List<EnemyLizard> lizards;
     private List<EnemyBat> bats;
-    
+
     // ตัวแปรสำหรับดาวและ UI
     private Texture2D starTexture;
     private List<Star> stars;
@@ -51,7 +51,7 @@ public class Game1 : Game
     private Texture2D ghostTexture;
     private Texture2D lizardWalkTex;
     private Texture2D lizardTongueTex;
-    private Texture2D batIdleTex; 
+    private Texture2D batIdleTex;
     private Texture2D batAtkTex;
     private SpriteFont font;
 
@@ -88,7 +88,7 @@ public class Game1 : Game
     private void SetFullscreenMode()
     {
         DisplayMode d = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
-        _graphics.HardwareModeSwitch = false; 
+        _graphics.HardwareModeSwitch = false;
         _graphics.IsFullScreen = true;
         _graphics.PreferredBackBufferWidth = d.Width;
         _graphics.PreferredBackBufferHeight = d.Height;
@@ -114,7 +114,7 @@ public class Game1 : Game
         font = Content.Load<SpriteFont>("Fonts/GameFont");
         tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
-        
+
         // โหลดเสียง
         sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
         sfxJump = Content.Load<SoundEffect>("Audio/jump");
@@ -175,13 +175,13 @@ public class Game1 : Game
         if (totalEnemiesForDrop <= 0) return;
 
         double dropChance = (double)remainingStarsToDrop / totalEnemiesForDrop;
-        
+
         if (dropRng.NextDouble() < dropChance)
         {
             stars.Add(new Star(starTexture, deathPosition));
-            remainingStarsToDrop--; 
+            remainingStarsToDrop--;
         }
-        
+
         totalEnemiesForDrop--;
     }
 
@@ -288,7 +288,7 @@ public class Game1 : Game
 
         if (player.JustJumped) sfxJump.Play();
         if (player.JustDashed) sfxDash.Play();
-        
+
         // เช็คการเก็บดาวและบวกจำนวน
         foreach (var star in stars)
         {
@@ -314,10 +314,11 @@ public class Game1 : Game
                     {
                         HandleEnemyDeath(enemy.Position);
                         enemies.RemoveAt(i);
+                        player.OnEnemyContact();
                         continue;
                     }
                 }
-                else if (!player.IsInvincible) 
+                else if (!player.IsInvincible)
                 {
                     currentHealth--;
                     sfxHurt.Play();
@@ -343,8 +344,9 @@ public class Game1 : Game
                 if (player.getDashingState)
                 {
                     HandleEnemyDeath(liz.Position);
-                    lizards.RemoveAt(i);        
-                    continue;      
+                    lizards.RemoveAt(i);
+                    player.OnEnemyContact();
+                    continue;
                 }
                 else if (!player.IsInvincible)
                 {
@@ -372,7 +374,8 @@ public class Game1 : Game
                 if (player.getDashingState)
                 {
                     HandleEnemyDeath(bat.Position);
-                    bats.RemoveAt(i); 
+                    bats.RemoveAt(i);
+                    player.OnEnemyContact();
                     continue;
                 }
                 else if (!player.IsInvincible)
@@ -495,7 +498,7 @@ public class Game1 : Game
         //bat
         foreach (var bat in bats)
             bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
-            
+
         // วาดดาว
         foreach (var star in stars)
         {
@@ -521,11 +524,11 @@ public class Game1 : Game
         _spriteBatch.End();
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
-        
+
         // วาดเวลา
         Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
         _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
-        
+
         // วาดหัวใจ
         int heartSize = 80;
         int heartPadding = 6;
@@ -540,14 +543,14 @@ public class Game1 : Game
         // ------------------------------------------------------------------
         int screenWidth = GraphicsDevice.Viewport.Width;
         int uiStarSize = 60; // ขนาดคงที่ 60x60 พิกเซล
-        Vector2 starUiPos = new Vector2(screenWidth - 160, 20); 
-        
+        Vector2 starUiPos = new Vector2(screenWidth - 160, 20);
+
         // บังคับสเกลภาพให้พอดีกับกรอบ Rectangle ที่เราตั้งไว้
         _spriteBatch.Draw(starTexture, new Rectangle((int)starUiPos.X, (int)starUiPos.Y, uiStarSize, uiStarSize), Color.White);
-        
+
         string starText = $"x {collectedStarsCount}";
         Vector2 textPos = new Vector2(starUiPos.X + uiStarSize + 10, starUiPos.Y + (uiStarSize / 2) - 15);
-        _spriteBatch.DrawString(font, starText, textPos, Color.Yellow); 
+        _spriteBatch.DrawString(font, starText, textPos, Color.Yellow);
         // ------------------------------------------------------------------
 
         _spriteBatch.End();
@@ -572,7 +575,7 @@ public class Game1 : Game
         bats = new List<EnemyBat>();
         foreach (Vector2 spawn in stage.BatSpawns)
             bats.Add(new EnemyBat(spawn));
-            
+
         // สร้างดาวบนแมพ
         stars = new List<Star>();
         foreach (Vector2 spawn in stage.StarSpawns)
