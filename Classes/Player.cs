@@ -49,11 +49,18 @@ namespace GalactaJumperMo.Classes
         private float dashCooldown = 1.5f;
         private Vector2 dashDirection;
 
- 
+        private bool justWallJumped { get; set; }
+        private bool isOnWall = false;
+        private int wallSide = 0; // -1 == left wall, +1 == right wall
+
+
         public void Update(GameTime gameTime, Stage stage)
         {
+            justWallJumped = false;
             JustJumped = false;
             JustDashed = false;
+            bool wasOnWall = isOnWall;
+            isOnWall = false;
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             KeyboardState k = Keyboard.GetState();
 
@@ -64,7 +71,7 @@ namespace GalactaJumperMo.Classes
             }
 
             bool shiftJustPressed = currentKeyboard.IsKeyDown(Keys.LeftShift) && !prevKeyboard.IsKeyDown(Keys.LeftShift);
-            if (shiftJustPressed && !isDashing && dashCooldownTimer <= 0f)
+            if (shiftJustPressed && !isDashing && !wasOnWall && dashCooldownTimer <= 0f)
             {
                 float dx = 0f, dy = 0f;
                 if (k.IsKeyDown(Keys.W)) dy = -1f;
@@ -84,25 +91,28 @@ namespace GalactaJumperMo.Classes
                 dashCooldownTimer = dashCooldown;
             }
 
-            if (!isDashing)
+            if (!isDashing && !wasOnWall)
             {
                 float acceleration = 900f;
                 float targetSpeed = 0f;
-                if (k.IsKeyDown(Keys.A)) {
+                if (k.IsKeyDown(Keys.A))
+                {
                     targetSpeed = -speed;
                 }
                 else if (k.IsKeyDown(Keys.D))
                 {
                     targetSpeed = speed;
-                } 
-                if (Math.Abs(targetSpeed - velocity.X) <= acceleration * dt) {
+                }
+                if (Math.Abs(targetSpeed - velocity.X) <= acceleration * dt)
+                {
                     velocity.X = targetSpeed;
                 }
                 else if (isOnGround)
                 {
                     velocity.X = (velocity.X + Math.Sign(targetSpeed - velocity.X) * acceleration * dt) * 0.9f;
                 }
-                else {
+                else
+                {
                     velocity.X = velocity.X + Math.Sign(targetSpeed - velocity.X) * acceleration * dt;
                 }
 
@@ -113,7 +123,25 @@ namespace GalactaJumperMo.Classes
                     JustJumped = true;
                 }
             }
-
+            else if (!isDashing && wasOnWall)
+            {
+                bool pressingAway = (wallSide == 1 && k.IsKeyDown(Keys.A)) || (wallSide == -1 && k.IsKeyDown(Keys.D));
+                if (pressingAway)
+                    velocity.X = wallSide == 1 ? -speed : speed;
+                else
+                    velocity.X = wallSide * 50f; // small push into wall to maintain contact each frame
+            }
+            if (wasOnWall)
+            {
+                bool spaceJustPressed = currentKeyboard.IsKeyDown(Keys.Space) && !prevKeyboard.IsKeyDown(Keys.Space);
+                if (spaceJustPressed)
+                {
+                    velocity.Y = jumpForce;
+                    velocity.X = -wallSide * speed * 1.2f; // jump away from wall
+                    dashCooldownTimer = 0f;
+                    justWallJumped = true;
+                }
+            }
             prevKeyboard = currentKeyboard;
 
             if (isDashing)
@@ -129,9 +157,14 @@ namespace GalactaJumperMo.Classes
             }
 
             // gravity
-            if (!isDashing)
+            if (!isDashing && !wasOnWall)
                 velocity.Y += gravity * dt;
-
+            else if (wasOnWall && !justWallJumped)
+            {
+                if (velocity.Y < 0) velocity.Y = 0f; // cancel upward momentum on wall grab
+                //velocity.Y = Math.Min(velocity.Y + gravity * 0.15f * dt, 80f);
+                velocity.Y = 0f;
+            }
             isOnGround = false;
 
             // horizontal collision
@@ -143,16 +176,34 @@ namespace GalactaJumperMo.Classes
                 if (!boundsX.Intersects(platform))
                     continue;
 
-                if (velocity.X > 0) // moving right
+                if (velocity.X > 0) // moving right, hit right wall
                 {
                     Position.X = platform.Left - Bounds.Width;
+                    if (!justWallJumped)
+                    {
+                        isOnWall = true;
+                        wallSide = 1;
+                        dashCooldownTimer = 0f;
+                    }
                 }
-                else if (velocity.X < 0) // moving left
+                else if (velocity.X < 0) // moving left, hit left wall
                 {
                     Position.X = platform.Right;
+                    if (!justWallJumped)
+                    {
+                        isOnWall = true;
+                        wallSide = -1;
+                        dashCooldownTimer = 0f;
+                    }
                 }
 
                 velocity.X = 0;
+                if (isDashing)
+                {
+                    isDashing = false;
+                    dashTimer = 0f;
+                    velocity.Y = 0f;
+                }
                 boundsX = Bounds;
             }
 
@@ -170,6 +221,7 @@ namespace GalactaJumperMo.Classes
                     Position.Y = platform.Top - Bounds.Height;
                     velocity.Y = 0;
                     isOnGround = true;
+                    isOnWall = false;
                 }
                 else if (velocity.Y < 0) // jumping upward
                 {
