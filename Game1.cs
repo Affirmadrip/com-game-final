@@ -543,7 +543,7 @@ public class Game1 : Game
         foreach (TileInstance tile in stage.DecorationTiles)
             _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
 
-        Rectangle movingPlatformSource = new Rectangle(0, 112, 48, 32);
+        Rectangle movingPlatformSource = new Rectangle(144, 0, 16, 16);
 
         foreach (var mp in stage.MovingPlatforms)
             mp.Draw(_spriteBatch, tilemap, movingPlatformSource);
