@@ -133,7 +133,7 @@ namespace GalactaJumperMo.Classes
             {
                 velocity.X = wallSide * 90f;
             }
-            //check walljump press
+            //check wall grab space press and jump press
             bool spaceJustPressed = currentKeyboard.IsKeyDown(Keys.Space) && !prevKeyboard.IsKeyDown(Keys.Space); ;
             if (spaceJustPressed && touchingWallTimer > 0f && !wasOnWall && !isOnGround)
             {
@@ -187,7 +187,7 @@ namespace GalactaJumperMo.Classes
                     if (!justWallJumped)
                     {
                         touchingWallSide = 1;
-                        touchingWallTimer = 0.15f;
+                        touchingWallTimer = 0.5f;
                         if (wasOnWall) { isOnWall = true; wallSide = 1; }
                     }
                 }
@@ -197,7 +197,7 @@ namespace GalactaJumperMo.Classes
                     if (!justWallJumped)
                     {
                         touchingWallSide = -1;
-                        touchingWallTimer = 0.15f;
+                        touchingWallTimer = 0.5f;
                         if (wasOnWall) { isOnWall = true; wallSide = -1; }
                     }
                 }
