@@ -23,8 +23,8 @@ namespace GalactaJumperMo.Classes
         private int animRow;
         private int animFrame;
         private float animTimer;
-        private float[] frameDurations = { 0.35f, 0.1f, 0.18f, 0.25f, 0.1f };
-        private int[] frameCounts = { 2, 6, 3, 2, 5 };
+        private float[] frameDurations = { 0.35f, 0.1f, 0.18f, 0.25f, 0.1f, 0.2f };
+        private int[] frameCounts = { 2, 6, 3, 2, 5, 1 };
         public bool FacingLeft { get; private set; }
         public Rectangle SourceRect => new Rectangle(animFrame * 32, animRow * 32, 32, 32);
         public Rectangle Bounds =>
@@ -125,15 +125,11 @@ namespace GalactaJumperMo.Classes
             }
             else if (!isDashing && wasOnWall)
             {
-                bool pressingAway = (wallSide == 1 && k.IsKeyDown(Keys.A)) || (wallSide == -1 && k.IsKeyDown(Keys.D));
-                if (pressingAway)
-                    velocity.X = wallSide == 1 ? -speed : speed;
-                else
-                    velocity.X = wallSide * 50f; // small push into wall to maintain contact each frame
+                velocity.X = wallSide * 90f;
             }
             if (wasOnWall)
             {
-                bool spaceJustPressed = currentKeyboard.IsKeyDown(Keys.Space) && !prevKeyboard.IsKeyDown(Keys.Space);
+                bool spaceJustPressed = currentKeyboard.IsKeyDown(Keys.Space);
                 if (spaceJustPressed)
                 {
                     velocity.Y = jumpForce;
@@ -162,7 +158,6 @@ namespace GalactaJumperMo.Classes
             else if (wasOnWall && !justWallJumped)
             {
                 if (velocity.Y < 0) velocity.Y = 0f; // cancel upward momentum on wall grab
-                //velocity.Y = Math.Min(velocity.Y + gravity * 0.15f * dt, 80f);
                 velocity.Y = 0f;
             }
             isOnGround = false;
@@ -253,6 +248,10 @@ namespace GalactaJumperMo.Classes
             else if (isOnGround && velocity.X == 0)
             {
                 newRow = 0;
+            }
+            else if (isOnWall)
+            {
+                newRow = 5;
             }
             else
             {
