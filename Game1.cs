@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using GalactaJumperMo.Classes;
 using Microsoft.Xna.Framework.Audio;
+using System.Linq;
 
 namespace GalactaJumperMo;
 
@@ -75,13 +76,15 @@ public class Game1 : Game
     private Matrix cameraTransform;
     private KeyboardState previousKeyboard;
 
+    private SoundEffect enemyElimSound;
+
     public Game1()
     {
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
-        SetFullscreenMode();
-        _graphics.ApplyChanges();
+        //SetFullscreenMode();
+        //_graphics.ApplyChanges();
     }
 
     private void SetFullscreenMode()
@@ -97,6 +100,8 @@ public class Game1 : Game
     protected override void Initialize()
     {
         cameraTransform = Matrix.Identity;
+
+        SetFullscreenMode();
         base.Initialize();
     }
 
@@ -117,7 +122,8 @@ public class Game1 : Game
         sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
         sfxJump = Content.Load<SoundEffect>("Audio/jump");
         sfxDash = Content.Load<SoundEffect>("Audio/dash");
-        sfxStar = Content.Load<SoundEffect>("Audio/starcorrect"); 
+        sfxStar = Content.Load<SoundEffect>("Audio/starcorrect");
+        enemyElimSound = Content.Load<SoundEffect>("Audio/elim");
 
         starTexture = Content.Load<Texture2D>("Star/starcoin");
 
@@ -169,6 +175,8 @@ public class Game1 : Game
     // star drops from enemy
     private void HandleEnemyDeath(Vector2 deathPosition)
     {
+        enemyElimSound.Play();
+
         if (totalEnemiesForDrop <= 0) return;
 
         double dropChance = (double)remainingStarsToDrop / totalEnemiesForDrop;
@@ -623,6 +631,95 @@ public class Game1 : Game
 
         _spriteBatch.End();
     }
+    private Random _spawnRng = new Random();
+    private Vector2 GetRandomGroundSpawn(Stage currentStage, int entityHeight, int entityWidth, Vector2 playerSpawnPos, int minPlatformWidth = 0, List<Vector2> existingSpawns = null, float minDistance = 0f)
+    {
+        var allTopFloors = new List<Rectangle>();
+
+        foreach (var p in currentStage.StaticPlatforms)
+        {
+            if (p.Width >= p.Height)
+            {
+                Rectangle spaceAbove = new Rectangle(p.X + 2, p.Top - 4, p.Width - 4, 4);
+                bool isCovered = currentStage.StaticPlatforms.Any(other => other.Intersects(spaceAbove));
+
+                if (!isCovered)
+                {
+                    allTopFloors.Add(p);
+                }
+            }
+        }
+
+        var validFloors = allTopFloors.Where(p => p.Width >= minPlatformWidth).ToList();
+        if (validFloors.Count == 0) validFloors = allTopFloors;
+
+        if (validFloors.Count == 0) return new Vector2(playerSpawnPos.X, playerSpawnPos.Y - 200);
+
+        int attempts = 0;
+        int maxAttempts = 50;
+        Vector2 finalSpawn = Vector2.Zero;
+        bool foundValidSpawn = false;
+
+        while (attempts < maxAttempts)
+        {
+            Rectangle floor = validFloors[_spawnRng.Next(validFloors.Count)];
+
+            int xPadding = entityWidth / 2;
+            int minX = floor.Left + xPadding;
+            int maxX = floor.Right - xPadding;
+
+            int spawnX = minX < maxX ? _spawnRng.Next(minX, maxX) : floor.Center.X;
+
+            int spawnY = floor.Top - entityHeight - 2;
+
+            Vector2 candidatePos = new Vector2(spawnX, spawnY);
+            bool isTooClose = false;
+
+            if (Vector2.Distance(candidatePos, playerSpawnPos) < minDistance)
+            {
+                isTooClose = true;
+            }
+
+            if (!isTooClose && existingSpawns != null)
+            {
+                foreach (var pos in existingSpawns)
+                {
+                    if (Vector2.Distance(candidatePos, pos) < minDistance)
+                    {
+                        isTooClose = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isTooClose)
+            {
+                finalSpawn = candidatePos;
+                foundValidSpawn = true;
+                break; 
+            }
+
+            attempts++;
+        }
+
+        if (!foundValidSpawn && finalSpawn == Vector2.Zero)
+        {
+            Rectangle floor = validFloors[0];
+            finalSpawn = new Vector2(floor.Center.X, floor.Top - entityHeight - 2);
+        }
+
+        if (existingSpawns != null) existingSpawns.Add(finalSpawn);
+        return finalSpawn;
+    }
+
+    private Vector2 GetRandomAirSpawn(Stage currentStage)
+    {
+        int spawnX = _spawnRng.Next(100, currentStage.StageWidthPixels - 100);
+
+        int spawnY = _spawnRng.Next(50, currentStage.VoidY - 150);
+
+        return new Vector2(spawnX, spawnY);
+    }
 
     private void BuildStageAndActors()
     {
@@ -632,21 +729,46 @@ public class Game1 : Game
         player.Position = stage.PlayerSpawn;
         player.ResetVelocity();
 
+        int ghostCount = 3;
+        int lizardCount = 3;
+        int batCount = 3;
+        int starCount = 3;
+
+        int ghostHeight = 32;
+        int ghostWidth = 32;
+        int lizardHeight = 32;
+        int lizardWidth = 32;
+        int starHeight = (int)(starTexture.Height * 0.05f);
+        int starWidth = (int)(starTexture.Width * 0.05f);
+
+        int lizardMinPlatformLength = 160;
+
+        List<Vector2> spawnedPositions = new List<Vector2>();
+        float minDistance = 150f;
+
         enemies = new List<Enemy>();
-        foreach (Vector2 spawn in stage.EnemySpawns)
-            enemies.Add(new Enemy(spawn));
+        for (int i = 0; i < ghostCount; i++)
+        {
+            enemies.Add(new Enemy(GetRandomGroundSpawn(stage, ghostHeight, ghostWidth, stage.PlayerSpawn, 0, spawnedPositions, minDistance)));
+        }
 
         lizards = new List<EnemyLizard>();
-        foreach (Vector2 spawn in stage.LizardSpawns)
-            lizards.Add(new EnemyLizard(spawn));
+        for (int i = 0; i < lizardCount; i++)
+        {
+            lizards.Add(new EnemyLizard(GetRandomGroundSpawn(stage, lizardHeight, lizardWidth, stage.PlayerSpawn, lizardMinPlatformLength, spawnedPositions, minDistance)));
+        }
 
         bats = new List<EnemyBat>();
-        foreach (Vector2 spawn in stage.BatSpawns)
-            bats.Add(new EnemyBat(spawn));
+        for (int i = 0; i < batCount; i++)
+        {
+            bats.Add(new EnemyBat(GetRandomAirSpawn(stage)));
+        }
 
         stars = new List<Star>();
-        foreach (Vector2 spawn in stage.StarSpawns)
-            stars.Add(new Star(starTexture, spawn));
+        for (int i = 0; i < starCount; i++)
+        {
+            stars.Add(new Star(starTexture, GetRandomGroundSpawn(stage, starHeight, starWidth, stage.PlayerSpawn, 0, spawnedPositions, minDistance)));
+        }
 
         totalEnemiesForDrop = enemies.Count + lizards.Count + bats.Count;
         remainingStarsToDrop = Math.Min(2, totalEnemiesForDrop);

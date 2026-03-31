@@ -31,11 +31,6 @@ namespace GalactaJumperMo.Classes
         public List<TileInstance> SolidTiles = new List<TileInstance>();
         public List<TileInstance> DecorationTiles = new List<TileInstance>();
 
-        public List<Vector2> EnemySpawns = new List<Vector2>();
-        public List<Vector2> LizardSpawns = new List<Vector2>();
-        public List<Vector2> BatSpawns = new List<Vector2>();
-        public List<Vector2> StarSpawns = new List<Vector2>();
-
         public List<MovingPlatform> MovingPlatforms = new List<MovingPlatform>();
 
         public Vector2 PlayerSpawn;
