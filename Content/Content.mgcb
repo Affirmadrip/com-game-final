@@ -148,6 +148,18 @@
 /processorParam:TextureFormat=Color
 /build:Stage/monochrome_tilemap_transparent_packed.png
 
+#begin Stage/monochrome_tilemap_packed.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Stage/monochrome_tilemap_packed.png
+
 #begin Star/starcoin.png
 /importer:TextureImporter
 /processor:TextureProcessor

@@ -1,96 +1,116 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Collections.Generic;
 
 namespace GalactaJumperMo.Classes
 {
     public class MovingPlatform
     {
-        public Vector2 StartPosition;
         public Vector2 Position;
         public Vector2 PreviousPosition;
         public Vector2 Delta;
 
         public int Width;
         public int Height;
-
-        public string Axis;
-        public float Range;
         public float Speed;
 
-        private int _direction = 1;
+        // Tile source from LDtk entity
+        public Rectangle TileSource;
 
+        // TargetNodes: list of waypoints (including start)
+        public List<Vector2> TargetNodes;
+        private int _currentNodeIndex = 0;
+        private int _direction = 1; // 1 = forward, -1 = backward
+
+        // Use TileSource size for bounds (collision)
         public Rectangle Bounds =>
             new Rectangle(
                 (int)MathF.Round(Position.X),
                 (int)MathF.Round(Position.Y),
-                Width,
-                Height
+                TileSource.Width,
+                TileSource.Height
             );
 
-        public MovingPlatform(Vector2 startPosition, int width, int height,
-                              string axis, float range, float speed)
+        public MovingPlatform(Vector2 startPosition, int width, int height, float speed, List<Vector2> targetNodes = null, Rectangle? tileSource = null)
         {
-            StartPosition = startPosition;
             Position = startPosition;
             PreviousPosition = startPosition;
             Width = width;
             Height = height;
-            Axis = axis ?? "horizontal";
-            Range = range;
             Speed = speed;
+            TileSource = tileSource ?? new Rectangle(64, 48, 48, 16);
+
+            // Build node list: start position + all target nodes
+            TargetNodes = new List<Vector2> { startPosition };
+            if (targetNodes != null && targetNodes.Count > 0)
+            {
+                TargetNodes.AddRange(targetNodes);
+            }
         }
 
         public void Update(GameTime gameTime)
         {
-            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (TargetNodes.Count < 2) return;
 
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
             PreviousPosition = Position;
 
-            if (Axis == "vertical")
-            {
-                Position.Y += Speed * _direction * dt;
+            // Get next target node index
+            int nextIndex = _currentNodeIndex + _direction;
 
-                if (Position.Y > StartPosition.Y + Range)
+            // Handle direction reversal at ends
+            if (nextIndex >= TargetNodes.Count)
+            {
+                _direction = -1;
+                nextIndex = _currentNodeIndex + _direction;
+            }
+            else if (nextIndex < 0)
+            {
+                _direction = 1;
+                nextIndex = _currentNodeIndex + _direction;
+            }
+
+            Vector2 target = TargetNodes[nextIndex];
+            Vector2 toTarget = target - Position;
+            float distance = toTarget.Length();
+
+            if (distance > 0)
+            {
+                float moveAmount = Speed * dt;
+
+                if (moveAmount >= distance)
                 {
-                    Position.Y = StartPosition.Y + Range;
-                    _direction = -1;
+                    // Reached the node
+                    Position = target;
+                    _currentNodeIndex = nextIndex;
                 }
-                else if (Position.Y < StartPosition.Y)
+                else
                 {
-                    Position.Y = StartPosition.Y;
-                    _direction = 1;
+                    // Move towards target
+                    Vector2 dir = Vector2.Normalize(toTarget);
+                    Position += dir * moveAmount;
                 }
             }
             else
             {
-                Position.X += Speed * _direction * dt;
-
-                if (Position.X > StartPosition.X + Range)
-                {
-                    Position.X = StartPosition.X + Range;
-                    _direction = -1;
-                }
-                else if (Position.X < StartPosition.X)
-                {
-                    Position.X = StartPosition.X;
-                    _direction = 1;
-                }
+                _currentNodeIndex = nextIndex;
             }
 
             Delta = Position - PreviousPosition;
         }
 
-        public void Draw(SpriteBatch spriteBatch, Texture2D tilemap, Rectangle sourceRect)
+        public void Draw(SpriteBatch spriteBatch, Texture2D tilemap)
         {
+            // Use tile source size for drawing, not entity size
             Rectangle dest = new Rectangle(
                 (int)MathF.Round(Position.X),
                 (int)MathF.Round(Position.Y),
-                Width,
-                Height
+                TileSource.Width,
+                TileSource.Height
             );
 
-            spriteBatch.Draw(tilemap, dest, sourceRect, Color.White);
+            spriteBatch.Draw(tilemap, dest, TileSource, Color.White);
         }
     }
 }

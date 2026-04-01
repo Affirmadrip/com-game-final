@@ -77,8 +77,8 @@ namespace GalactaJumperMo.Classes
             var kb = Keyboard.GetState();
             var ms = Mouse.GetState();
 
-            if (Pressed(Keys.Down, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Count;
-            if (Pressed(Keys.Up,   kb)) _selectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
+            if (Pressed(Keys.Down, kb) || Pressed(Keys.S, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Count;
+            if (Pressed(Keys.Up,   kb) || Pressed(Keys.W, kb)) _selectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
 
             float lineH = 56f;
             float x0    = sw * 0.5f - 80f;

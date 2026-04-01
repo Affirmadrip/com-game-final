@@ -111,8 +111,8 @@ namespace GalactaJumperMo.Classes
         {
             if (Pressed(Keys.Escape, kb)) { FireAction(PauseAction.Resume); return; }
 
-            if (Pressed(Keys.Down, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Count;
-            if (Pressed(Keys.Up,   kb)) _selectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
+            if (Pressed(Keys.Down, kb) || Pressed(Keys.S, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Count;
+            if (Pressed(Keys.Up,   kb) || Pressed(Keys.W, kb)) _selectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
 
             for (int i = 0; i < _items.Count; i++)
                 _itemSlide[i] = MathHelper.Lerp(_itemSlide[i],
@@ -152,9 +152,9 @@ namespace GalactaJumperMo.Classes
         private void UpdateConfirm(KeyboardState kb, MouseState ms, int sw, int sh)
         {
             if (Pressed(Keys.Escape, kb)) { _confirming = false; return; }
-            if (Pressed(Keys.Up,    kb) || Pressed(Keys.Left,  kb))
+            if (Pressed(Keys.Up,    kb) || Pressed(Keys.Left,  kb) || Pressed(Keys.W, kb) || Pressed(Keys.A, kb))
                 _confirmIndex = Math.Max(0, _confirmIndex - 1);
-            if (Pressed(Keys.Down,  kb) || Pressed(Keys.Right, kb))
+            if (Pressed(Keys.Down,  kb) || Pressed(Keys.Right, kb) || Pressed(Keys.S, kb) || Pressed(Keys.D, kb))
                 _confirmIndex = Math.Min(1, _confirmIndex + 1);
 
             float lineH = 52f;
