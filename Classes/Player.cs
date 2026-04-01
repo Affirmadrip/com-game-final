@@ -24,8 +24,8 @@ namespace GalactaJumperMo.Classes
         private int animRow;
         private int animFrame;
         private float animTimer;
-        private float[] frameDurations = { 0.35f, 0.1f, 0.18f, 0.25f, 0.1f };
-        private int[] frameCounts = { 2, 6, 3, 2, 5 };
+        private float[] frameDurations = { 0.35f, 0.1f, 0.18f, 0.25f, 0.1f, 0.2f }; 
+        private int[] frameCounts = { 2, 6, 3, 2, 5, 1 };
         public bool FacingLeft { get; private set; }
         public Rectangle SourceRect => new Rectangle(animFrame * 32, animRow * 32, 32, 32);
         

@@ -19,6 +19,21 @@
 		"Tiles.png"
 	],
 	"entities": {
+		"Titles": [
+			{
+				"id": "Titles",
+				"iid": "306d1a20-21a0-11f1-a3e0-d5924a8f114a",
+				"layer": "Titles",
+				"x": 2224,
+				"y": 1312,
+				"width": 16,
+				"height": 16,
+				"color": 4098376,
+				"customFields": {
+					"Title": "Shift to dash"
+				}
+			}
+		],
 		"Skills": [
 			{
 				"id": "Skills",
