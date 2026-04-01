@@ -1,0 +1,72 @@
+{
+	"identifier": "Level_2",
+	"uniqueIdentifer": "a18dfe60-21a0-11f1-b567-f1e3d30a4341",
+	"x": 8608,
+	"y": -3216,
+	"width": 2752,
+	"height": 2192,
+	"bgColor": "#696A79",
+	"neighbourLevels": [
+		{
+			"levelIid": "541561f0-21a0-11f1-b567-e13b9b8eb928",
+			"dir": "w"
+		}
+	],
+	"customFields" : {},
+	"layers": [
+		"Background.png",
+		"Collisions.png",
+		"Tiles.png"
+	],
+	"entities": {
+		"Skills": [
+			{
+				"id": "Skills",
+				"iid": "4d61f020-21a0-11f1-b567-0dcb1b579853",
+				"layer": "Objective",
+				"x": 2176,
+				"y": 928,
+				"width": 16,
+				"height": 16,
+				"color": 7552569,
+				"customFields": {
+					"Skill": "dash"
+				}
+			}
+		],
+		"MovingPlatform": [
+			{
+				"id": "MovingPlatform",
+				"iid": "78e0ff80-21a0-11f1-b567-a77de07e3e8d",
+				"layer": "MovingPlatform",
+				"x": 600,
+				"y": 1368,
+				"width": 16,
+				"height": 16,
+				"color": 14984818,
+				"customFields": {
+					"TargetNodes": [
+						{
+							"cx": 37,
+							"cy": 60
+						}
+					],
+					"Speed": 0
+				}
+			}
+		],
+		"Spring": [
+			{
+				"id": "Spring",
+				"iid": "b66a7a20-21a0-11f1-b567-9f14864bd33e",
+				"layer": "Spring",
+				"x": 400,
+				"y": 816,
+				"width": 16,
+				"height": 16,
+				"color": 16690740,
+				"customFields" : {}
+			}
+		]
+	}
+}

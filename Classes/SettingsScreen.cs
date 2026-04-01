@@ -108,8 +108,8 @@ namespace GalactaJumperMo.Classes
             var ms = Mouse.GetState();
 
             // Navigation
-            if (Pressed(Keys.Down, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Length;
-            if (Pressed(Keys.Up,   kb)) _selectedIndex = (_selectedIndex - 1 + _items.Length) % _items.Length;
+            if (Pressed(Keys.Down, kb) || Pressed(Keys.S, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Length;
+            if (Pressed(Keys.Up,   kb) || Pressed(Keys.W, kb)) _selectedIndex = (_selectedIndex - 1 + _items.Length) % _items.Length;
 
             // Mouse hover — check each item's rectangle
             for (int i = 0; i < _items.Length; i++)
@@ -126,13 +126,13 @@ namespace GalactaJumperMo.Classes
 
             if (item.Type == SettingType.Toggle)
             {
-                if (Pressed(Keys.Enter, kb) || Pressed(Keys.Space, kb) || Pressed(Keys.Left, kb) || Pressed(Keys.Right, kb))
+                if (Pressed(Keys.Enter, kb) || Pressed(Keys.Space, kb) || Pressed(Keys.Left, kb) || Pressed(Keys.Right, kb) || Pressed(Keys.A, kb) || Pressed(Keys.D, kb))
                     item.BoolValue = !item.BoolValue;
             }
             else if (item.Type == SettingType.Slider)
             {
-                if (kb.IsKeyDown(Keys.Left))  item.FloatValue = Math.Max(0f, item.FloatValue - dt * 0.6f);
-                if (kb.IsKeyDown(Keys.Right)) item.FloatValue = Math.Min(1f, item.FloatValue + dt * 0.6f);
+                if (kb.IsKeyDown(Keys.Left) || kb.IsKeyDown(Keys.A))  item.FloatValue = Math.Max(0f, item.FloatValue - dt * 0.6f);
+                if (kb.IsKeyDown(Keys.Right) || kb.IsKeyDown(Keys.D)) item.FloatValue = Math.Min(1f, item.FloatValue + dt * 0.6f);
             }
             else if (item.Type == SettingType.Back)
             {

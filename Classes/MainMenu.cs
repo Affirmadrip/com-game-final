@@ -44,7 +44,10 @@ namespace GalactaJumperMo.Classes
             _menuFont  = menuFont;
             _pixel     = pixel;
 
-            if (hasSaveData) { _items.Add("Continue"); _actions.Add(MenuAction.Continue); }
+            if (hasSaveData)
+            {
+                _items.Add("Continue"); _actions.Add(MenuAction.Continue);
+            }
             _items.Add("New Game"); _actions.Add(MenuAction.NewGame);
             _items.Add("Tutorial"); _actions.Add(MenuAction.Tutorial);
             _items.Add("Settings"); _actions.Add(MenuAction.Settings);
@@ -87,8 +90,8 @@ namespace GalactaJumperMo.Classes
             var kb = Keyboard.GetState();
             var ms = Mouse.GetState();
 
-            if (Pressed(Keys.Down, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Count;
-            if (Pressed(Keys.Up,   kb)) _selectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
+            if (Pressed(Keys.Down, kb) || Pressed(Keys.S, kb)) _selectedIndex = (_selectedIndex + 1) % _items.Count;
+            if (Pressed(Keys.Up,   kb) || Pressed(Keys.W, kb)) _selectedIndex = (_selectedIndex - 1 + _items.Count) % _items.Count;
 
             float lineH = 56f;
             float mx0   = 80f;
@@ -247,7 +250,7 @@ namespace GalactaJumperMo.Classes
 
         private void DrawFooter(SpriteBatch sb, int sw, int sh, byte fa)
         {
-            const string HINT = "arrows / mouse to navigate   enter to select";
+            const string HINT = "W/S / arrows / mouse to navigate   enter to select";
             var sz = _menuFont.MeasureString(HINT);
             sb.DrawString(_menuFont, HINT,
                 new Vector2((sw - sz.X) * 0.5f, sh - 28f),

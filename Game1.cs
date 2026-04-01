@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -10,22 +11,27 @@ namespace GalactaJumperMo;
 
 public class Game1 : Game
 {
-    private const float WorldZoom = 2.25f;
+    private const float WorldZoom = 3.0f;
 
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
 
     // ── Game state ────────────────────────────────────────────────────────────
-    private enum GameState { MainMenu, Playing, Paused, GameOver, Tutorial, Settings }
+    private enum GameState { MainMenu, SaveLoad, Playing, Paused, GameOver, Tutorial, Settings }
     private GameState _gameState = GameState.MainMenu;
     private GameState _preSettingsState = GameState.MainMenu;
 
     // ── Screens ───────────────────────────────────────────────────────────────
     private MainMenuScreen _mainMenu;
+    private SaveLoadScreen _saveLoad;
     private TutorialScreen _tutorial;
     private SettingsScreen _settings;
     private PauseScreen _pause;
     private GameOverScreen _gameOver;
+
+    // ── Save system ───────────────────────────────────────────────────────────
+    private GameSaveData _currentSave;
+    private int _currentCheckpoint = 0;
 
     private SpriteFont _titleFont;
     private SpriteFont _menuFont;
@@ -66,13 +72,19 @@ public class Game1 : Game
     SoundEffect sfxStar;
 
     private float shakeTimer = 0f;
-    private const float shakeDuration = 0.35f;
-    private const float shakeStrength = 5f;
+    private const float shakeDuration = 0.0f;
+    private const float shakeStrength = 0f;
     private Vector2 shakeOffset = Vector2.Zero;
     private Random shakeRng = new Random();
 
+    // true = countdown enabled, false = unlimited time
+    private bool _isTimeLimited = false;
     private float timeLeft = 120f;
     private Matrix cameraTransform;
+    private float currentCameraX = 0f;
+    private float currentCameraY = 0f;
+    private float cameraVelocityX = 0f;
+    private float cameraVelocityY = 0f;
     private KeyboardState previousKeyboard;
 
     public Game1()
@@ -111,7 +123,7 @@ public class Game1 : Game
         pixel.SetData(new[] { Color.White });
 
         font = Content.Load<SpriteFont>("Fonts/GameFont");
-        tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_transparent_packed");
+        tilemap = Content.Load<Texture2D>("Stage/monochrome_tilemap_packed");
         playerTexture = Content.Load<Texture2D>("Player/mo_sprites");
 
         sfxHurt = Content.Load<SoundEffect>("Audio/hurt");
@@ -129,7 +141,8 @@ public class Game1 : Game
         _titleFont = Content.Load<SpriteFont>("Fonts/TitleFont");
         _menuFont = Content.Load<SpriteFont>("Fonts/MenuFont");
 
-        _mainMenu = new MainMenuScreen(_titleFont, _menuFont, pixel, hasSaveData: false);
+        bool hasSaveData = GameSaveData.SaveExists();
+        _mainMenu = new MainMenuScreen(_titleFont, _menuFont, pixel, hasSaveData: hasSaveData);
         _tutorial = new TutorialScreen(_titleFont, _menuFont, pixel);
         _settings = new SettingsScreen(_titleFont, _menuFont, pixel);
         _pause = new PauseScreen(_titleFont, _menuFont, pixel);
@@ -149,7 +162,8 @@ public class Game1 : Game
 
     private void GoToMainMenu()
     {
-        _mainMenu = new MainMenuScreen(_titleFont, _menuFont, pixel, hasSaveData: false);
+        bool hasSaveData = GameSaveData.SaveExists();
+        _mainMenu = new MainMenuScreen(_titleFont, _menuFont, pixel, hasSaveData: hasSaveData);
         _gameState = GameState.MainMenu;
     }
 
@@ -194,8 +208,13 @@ public class Game1 : Game
                 _mainMenu.Update(gameTime, sw, sh);
                 switch (_mainMenu.PendingAction)
                 {
+                    case MenuAction.Continue:
+                        _saveLoad = new SaveLoadScreen(_titleFont, _menuFont, pixel);
+                        _gameState = GameState.SaveLoad;
+                        break;
                     case MenuAction.NewGame:
-                        BuildStageAndActors();
+                        _currentSave = new GameSaveData();
+                        BuildStageAndActors(loadFromSave: false);
                         _gameState = GameState.Playing;
                         break;
                     case MenuAction.Tutorial:
@@ -207,6 +226,30 @@ public class Game1 : Game
                         break;
                     case MenuAction.Exit:
                         Exit();
+                        break;
+                }
+                break;
+
+            case GameState.SaveLoad:
+                _saveLoad.Update(gameTime, sw, sh);
+                switch (_saveLoad.PendingAction)
+                {
+                    case SaveLoadAction.Continue:
+                        _currentSave = _saveLoad.GetSaveData();
+                        BuildStageAndActors(loadFromSave: true);
+                        _gameState = GameState.Playing;
+                        break;
+                    case SaveLoadAction.NewGame:
+                        _currentSave = new GameSaveData();
+                        BuildStageAndActors(loadFromSave: false);
+                        _gameState = GameState.Playing;
+                        break;
+                    case SaveLoadAction.DeleteSave:
+                        GameSaveData.DeleteSave();
+                        GoToMainMenu();
+                        break;
+                    case SaveLoadAction.Back:
+                        GoToMainMenu();
                         break;
                 }
                 break;
@@ -254,7 +297,7 @@ public class Game1 : Game
                 switch (_gameOver.PendingAction)
                 {
                     case GameOverAction.Retry:
-                        BuildStageAndActors();
+                        BuildStageAndActors(retryFromCheckpoint: true);
                         _gameState = GameState.Playing;
                         break;
                     case GameOverAction.MainMenu:
@@ -309,11 +352,30 @@ public class Game1 : Game
 
         foreach (var star in stars)
         {
+            star.Update(gameTime);
+
             if (!star.IsCollected && player.Bounds.Intersects(star.Bounds))
             {
                 star.IsCollected = true;
                 collectedStarsCount++;
-                sfxStar.Play(); 
+                
+                // Update checkpoint and save
+                if (star.Checkpoint > _currentCheckpoint)
+                {
+                    _currentCheckpoint = star.Checkpoint;
+                }
+                
+                // Track collected star
+                _currentSave ??= new GameSaveData();
+                _currentSave.CollectedStarCheckpoints ??= new List<int>();
+                if (star.Checkpoint >= 0 && !_currentSave.CollectedStarCheckpoints.Contains(star.Checkpoint))
+                {
+                    _currentSave.CollectedStarCheckpoints.Add(star.Checkpoint);
+                }
+
+                SaveGame();
+                
+                sfxStar.Play();
             }
         }
         Rectangle feet = new Rectangle(
@@ -323,16 +385,10 @@ public class Game1 : Game
             6
         );
 
-        foreach (Rectangle spike in stage.HazardRects)
+        // Spike collision (using Spike entities)
+        foreach (Spike spike in stage.Spikes)
         {
-            Rectangle spikeHitbox = new Rectangle(
-                spike.X + 1,
-                spike.Y + 1,
-                spike.Width - 2,
-                spike.Height - 2
-            );
-
-            if (player.Bounds.Intersects(spikeHitbox) && !player.IsInvincible)
+            if (player.Bounds.Intersects(spike.Hitbox) && !player.IsInvincible)
             {
                 currentHealth--;
                 sfxHurt.Play();
@@ -447,6 +503,85 @@ public class Game1 : Game
             }
         }
 
+        // Death zone collision detection
+        foreach (var deathZone in stage.DeathZones)
+        {
+            if (deathZone.CheckCollision(player.Bounds))
+            {
+                TriggerGameOver(deathZone.ZoneTitle);
+                return;
+            }
+        }
+
+        // Objective/Skill collection and update
+        foreach (var objective in stage.Objectives)
+        {
+            objective.Update(gameTime);
+            
+            if (objective.CheckCollision(player.Bounds))
+            {
+                objective.IsCollected = true;
+                _currentSave ??= new GameSaveData();
+                _currentSave.CollectedObjectiveCheckpoints ??= new List<int>();
+                _currentSave.CollectedObjectiveKeys ??= new List<string>();
+
+                if (objective.Checkpoint > 0 && !_currentSave.CollectedObjectiveCheckpoints.Contains(objective.Checkpoint))
+                {
+                    _currentSave.CollectedObjectiveCheckpoints.Add(objective.Checkpoint);
+                }
+
+                string objectiveKey = GetObjectiveSaveKey(objective);
+                if (!string.IsNullOrEmpty(objectiveKey) && !_currentSave.CollectedObjectiveKeys.Contains(objectiveKey))
+                {
+                    _currentSave.CollectedObjectiveKeys.Add(objectiveKey);
+                }
+                
+                // Handle skill unlocking based on the Skill field
+                if (objective.Skill.Equals("wall_jump", StringComparison.OrdinalIgnoreCase))
+                {
+                    player.UnlockWallJump();
+                    _currentSave.HasWallJump = true;
+                    System.Diagnostics.Debug.WriteLine("Wall jump unlocked!");
+                }
+                else if (objective.Skill.Equals("dash", StringComparison.OrdinalIgnoreCase))
+                {
+                    player.UnlockDash();
+                    _currentSave.HasDash = true;
+                    System.Diagnostics.Debug.WriteLine("Dash unlocked!");
+                }
+                
+                sfxStar.Play(); // Play collection sound
+            }
+        }
+
+        // Spring collision and bounce
+        foreach (var spring in stage.Springs)
+        {
+            spring.Update(gameTime);
+            
+            if (spring.CheckPlayerContact(player.Bounds))
+            {
+                spring.Trigger();
+                player.ApplyKnockback(spring.GetBounceForce(player.FacingLeft));
+                sfxJump.Play();
+            }
+        }
+
+        // Conveyor belt push
+        foreach (var conveyor in stage.Conveyors)
+        {
+            if (conveyor.IsPlayerOnConveyor(player.Bounds))
+            {
+                player.MoveBy(conveyor.GetPushVelocity(dt));
+            }
+        }
+
+        // Update title displays
+        foreach (var title in stage.Titles)
+        {
+            title.Update(gameTime);
+        }
+
         if (shakeTimer > 0f)
         {
             shakeTimer -= dt;
@@ -461,12 +596,15 @@ public class Game1 : Game
             shakeOffset = Vector2.Zero;
         }
 
-        timeLeft -= dt;
-        if (timeLeft <= 0f)
+        if (_isTimeLimited)
         {
-            timeLeft = 0f;
-            TriggerGameOver("Time's up.");
-            return;
+            timeLeft -= dt;
+            if (timeLeft <= 0f)
+            {
+                timeLeft = 0f;
+                TriggerGameOver("Time's up.");
+                return;
+            }
         }
 
         if (player.Position.Y > stage.VoidY)
@@ -476,10 +614,70 @@ public class Game1 : Game
         }
 
         float viewportWidth = GraphicsDevice.Viewport.Width / WorldZoom;
+        float viewportHeight = GraphicsDevice.Viewport.Height / WorldZoom;
+
+        // Center camera on player with vertical offset (show more above player)
+        float cameraYOffset = -60f; // Negative = camera looks higher
+        float targetCameraX = player.Position.X + 16 - viewportWidth / 2;
+        float targetCameraY = player.Position.Y + 16 - viewportHeight / 2 + cameraYOffset;
+
+        // Clamp to stage bounds
+        // X: prevent showing outside left/right
+        float minCameraX = 0;
         float maxCameraX = Math.Max(0, stage.StageWidthPixels - viewportWidth);
-        float cameraX = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
-        cameraTransform = Matrix.CreateTranslation(-cameraX + shakeOffset.X, shakeOffset.Y, 0)
+        // Y: allow camera to go above stage (follow player upward), but not below stage bottom
+        float minCameraY = float.MinValue; // No upper limit - camera follows player up
+        float maxCameraY = Math.Max(0, stage.StageHeightPixels - viewportHeight);
+
+        // If stage is smaller than viewport, center the stage
+        if (stage.StageWidthPixels < viewportWidth)
+        {
+            targetCameraX = -(viewportWidth - stage.StageWidthPixels) / 2;
+            minCameraX = targetCameraX;
+            maxCameraX = targetCameraX;
+        }
+        if (stage.StageHeightPixels < viewportHeight)
+        {
+            targetCameraY = -(viewportHeight - stage.StageHeightPixels) / 2;
+            minCameraY = targetCameraY;
+            maxCameraY = targetCameraY;
+        }
+
+        targetCameraX = Math.Clamp(targetCameraX, minCameraX, maxCameraX);
+        targetCameraY = Math.Clamp(targetCameraY, minCameraY, maxCameraY);
+
+        // SmoothDamp for buttery smooth camera
+        float smoothTime = 0.15f;
+        currentCameraX = SmoothDamp(currentCameraX, targetCameraX, ref cameraVelocityX, smoothTime, dt);
+        currentCameraY = SmoothDamp(currentCameraY, targetCameraY, ref cameraVelocityY, smoothTime, dt);
+
+        // Round for pixel-perfect rendering
+        float cameraX = MathF.Round(currentCameraX);
+        float cameraY = MathF.Round(currentCameraY);
+
+        cameraTransform = Matrix.CreateTranslation(-cameraX + shakeOffset.X, -cameraY + shakeOffset.Y, 0)
                 * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
+    }
+
+    // SmoothDamp - smooth interpolation like Unity's
+    private static float SmoothDamp(float current, float target, ref float velocity, float smoothTime, float dt)
+    {
+        smoothTime = Math.Max(0.0001f, smoothTime);
+        float omega = 2f / smoothTime;
+        float x = omega * dt;
+        float exp = 1f / (1f + x + 0.48f * x * x + 0.235f * x * x * x);
+        float change = current - target;
+        float temp = (velocity + omega * change) * dt;
+        velocity = (velocity - omega * temp) * exp;
+        float result = target + (change + temp) * exp;
+        
+        // Prevent overshooting
+        if ((target - current > 0f) == (result > target))
+        {
+            result = target;
+            velocity = 0f;
+        }
+        return result;
     }
 
     protected override void Draw(GameTime gameTime)
@@ -493,6 +691,13 @@ public class Game1 : Game
                 GraphicsDevice.Clear(new Color(4, 6, 16));
                 _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
                 _mainMenu.Draw(_spriteBatch, sw, sh);
+                _spriteBatch.End();
+                break;
+
+            case GameState.SaveLoad:
+                GraphicsDevice.Clear(new Color(4, 6, 16));
+                _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                _saveLoad.Draw(_spriteBatch, sw, sh);
                 _spriteBatch.End();
                 break;
 
@@ -534,23 +739,47 @@ public class Game1 : Game
 
     private void DrawGameWorld()
     {
-        GraphicsDevice.Clear(Color.Black);
+        GraphicsDevice.Clear(stage.BgColor);
 
         _spriteBatch.Begin(transformMatrix: cameraTransform, samplerState: SamplerState.PointClamp);
 
-        foreach (TileInstance tile in stage.SolidTiles)
-            _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
-        foreach (TileInstance tile in stage.DecorationTiles)
-            _spriteBatch.Draw(tilemap, tile.Destination, tile.Source, Color.White);
+        // Draw only tiles near the camera to reduce per-frame draw calls.
+        int viewportWidth = GraphicsDevice.Viewport.Width;
+        int viewportHeight = GraphicsDevice.Viewport.Height;
+        int worldViewWidth = (int)MathF.Ceiling(viewportWidth / WorldZoom);
+        int worldViewHeight = (int)MathF.Ceiling(viewportHeight / WorldZoom);
+        Rectangle worldCullBounds = new Rectangle(
+            (int)MathF.Floor(currentCameraX),
+            (int)MathF.Floor(currentCameraY),
+            Math.Max(1, worldViewWidth),
+            Math.Max(1, worldViewHeight)
+        );
 
-        Rectangle movingPlatformSource = new Rectangle(144, 0, 16, 16);
+        // Draw LDtk prerendered levels
+        stage.Draw(_spriteBatch, worldCullBounds);
 
         foreach (var mp in stage.MovingPlatforms)
-            mp.Draw(_spriteBatch, tilemap, movingPlatformSource);
+            mp.Draw(_spriteBatch, tilemap);
 
-        // hazard debug
-        // foreach (Rectangle spike in stage.HazardRects)
-        //     _spriteBatch.Draw(pixel, spike, Color.Red * 0.4f);
+        // Draw spikes
+        foreach (var spike in stage.Spikes)
+            spike.Draw(_spriteBatch, tilemap);
+
+        // Draw objectives/skills
+        foreach (var objective in stage.Objectives)
+            objective.Draw(_spriteBatch, tilemap);
+
+        // Draw springs
+        foreach (var spring in stage.Springs)
+            spring.Draw(_spriteBatch, pixel);
+
+        // Draw conveyors
+        foreach (var conveyor in stage.Conveyors)
+            conveyor.Draw(_spriteBatch, tilemap);
+
+        // Draw titles
+        foreach (var title in stage.Titles)
+            title.Draw(_spriteBatch, _menuFont);
 
         // moving platform debug
         // foreach (var mp in stage.MovingPlatforms)
@@ -574,7 +803,7 @@ public class Game1 : Game
         // draw star
         foreach (var star in stars)
         {
-            star.Draw(_spriteBatch);
+            star.Draw(_spriteBatch, tilemap);
         }
 
         if (player.Visible)
@@ -598,8 +827,15 @@ public class Game1 : Game
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
         // draw timer
-        Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
-        _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
+        if (_isTimeLimited)
+        {
+            Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
+            _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
+        }
+        else
+        {
+            _spriteBatch.DrawString(font, "Time: INF", new Vector2(20, 20), Color.White);
+        }
 
         // draw hearts
         int heartSize = 80;
@@ -611,46 +847,131 @@ public class Game1 : Game
         }
 
 
-        int screenWidth = GraphicsDevice.Viewport.Width;
-        int uiStarSize = 60; 
-        Vector2 starUiPos = new Vector2(screenWidth - 160, 20);
-
-        _spriteBatch.Draw(starTexture, new Rectangle((int)starUiPos.X, (int)starUiPos.Y, uiStarSize, uiStarSize), Color.White);
-
-        string starText = $"x {collectedStarsCount}";
-        Vector2 textPos = new Vector2(starUiPos.X + uiStarSize + 10, starUiPos.Y + (uiStarSize / 2) - 15);
-        _spriteBatch.DrawString(font, starText, textPos, Color.Yellow);
-
         _spriteBatch.End();
     }
 
-    private void BuildStageAndActors()
+    private void BuildStageAndActors(bool loadFromSave = false, bool retryFromCheckpoint = false)
     {
-        stage = new Stage(tilemap.Width / 16);
+        stage = new Stage(Content, _spriteBatch, tilemap);
 
         player = new Player();
         player.Position = stage.PlayerSpawn;
-        player.ResetVelocity();
+
+        bool shouldUseSaveData = (loadFromSave || retryFromCheckpoint) && _currentSave != null;
+
+        // Load player abilities from save when continuing or retrying.
+        if (shouldUseSaveData)
+        {
+            _currentSave.CollectedObjectiveCheckpoints ??= new List<int>();
+            _currentSave.CollectedStarCheckpoints ??= new List<int>();
+            _currentSave.CollectedObjectiveKeys ??= new List<string>();
+
+            if (_currentSave.HasWallJump) player.UnlockWallJump();
+            if (_currentSave.HasDash) player.UnlockDash();
+
+            if (loadFromSave)
+                _currentCheckpoint = _currentSave.CurrentCheckpoint;
+
+            collectedStarsCount = _currentSave.CollectedStars;
+        }
+        else if (!retryFromCheckpoint)
+        {
+            _currentCheckpoint = 0;
+            collectedStarsCount = 0;
+        }
 
         enemies = new List<Enemy>();
-        foreach (Vector2 spawn in stage.EnemySpawns)
-            enemies.Add(new Enemy(spawn));
-
         lizards = new List<EnemyLizard>();
-        foreach (Vector2 spawn in stage.LizardSpawns)
-            lizards.Add(new EnemyLizard(spawn));
-
         bats = new List<EnemyBat>();
-        foreach (Vector2 spawn in stage.BatSpawns)
-            bats.Add(new EnemyBat(spawn));
 
+        // On retry, keep enemies removed and respawn only the player at checkpoint.
+        if (!retryFromCheckpoint)
+        {
+            // Legacy enemy spawns (keep for backward compatibility)
+            foreach (Vector2 spawn in stage.EnemySpawns)
+                enemies.Add(new Enemy(spawn));
+
+            foreach (Vector2 spawn in stage.LizardSpawns)
+                lizards.Add(new EnemyLizard(spawn));
+
+            foreach (Vector2 spawn in stage.BatSpawns)
+                bats.Add(new EnemyBat(spawn));
+
+            // New LDTK-based enemy spawning with MonsterType
+            foreach (var spawnData in stage.EnemySpawnDataList)
+            {
+                switch (spawnData.Type)
+                {
+                    case MonsterType.Ghost:
+                        enemies.Add(new Enemy(spawnData.Position));
+                        break;
+                    case MonsterType.Lizard:
+                        lizards.Add(new EnemyLizard(spawnData.Position));
+                        break;
+                    case MonsterType.Bat:
+                        bats.Add(new EnemyBat(spawnData.Position));
+                        break;
+                }
+            }
+        }
+
+        // Load stars with checkpoint data
         stars = new List<Star>();
+        foreach (var (position, checkpoint, tileSource) in stage.StarSpawnData)
+        {
+            // Skip stars that were already collected in this save.
+            if (shouldUseSaveData && _currentSave != null && _currentSave.CollectedStarCheckpoints.Contains(checkpoint))
+            {
+                continue;
+            }
+
+            var star = new Star(position, checkpoint, tileSource);
+            stars.Add(star);
+        }
+
+        // Also handle legacy star spawns
         foreach (Vector2 spawn in stage.StarSpawns)
-            stars.Add(new Star(starTexture, spawn));
+        {
+            if (!stage.StarSpawnData.Any(s => s.position == spawn))
+                stars.Add(new Star(starTexture, spawn));
+        }
+
+        // Remove objectives already collected in this save.
+        if (shouldUseSaveData && _currentSave != null)
+        {
+            stage.Objectives.RemoveAll(objective =>
+            {
+                string objectiveKey = GetObjectiveSaveKey(objective);
+                bool collectedByKey = !string.IsNullOrEmpty(objectiveKey)
+                    && _currentSave.CollectedObjectiveKeys.Contains(objectiveKey);
+
+                bool collectedBySkill =
+                    (objective.Skill.Equals("wall_jump", StringComparison.OrdinalIgnoreCase) && _currentSave.HasWallJump) ||
+                    (objective.Skill.Equals("dash", StringComparison.OrdinalIgnoreCase) && _currentSave.HasDash);
+
+                return collectedByKey || collectedBySkill;
+            });
+        }
 
         totalEnemiesForDrop = enemies.Count + lizards.Count + bats.Count;
         remainingStarsToDrop = Math.Min(2, totalEnemiesForDrop);
-        collectedStarsCount = 0;
+
+        // New game starts at PlayerStart, loading/ retry starts from checkpoint.
+        if (loadFromSave && _currentSave != null)
+            player.Position = ResolveCheckpointSpawn(_currentCheckpoint);
+        else if (retryFromCheckpoint)
+        {
+            bool hasReachedCheckpoint = _currentSave?.CollectedStarCheckpoints != null
+                && _currentSave.CollectedStarCheckpoints.Contains(_currentCheckpoint);
+
+            player.Position = hasReachedCheckpoint
+                ? ResolveCheckpointSpawn(_currentCheckpoint)
+                : stage.PlayerSpawn;
+        }
+        else
+            player.Position = stage.PlayerSpawn;
+
+        player.ResetVelocity();
 
         timeLeft = 120f;
         currentHealth = maxHealth;
@@ -658,13 +979,92 @@ public class Game1 : Game
         UpdateCameraImmediate();
     }
 
+    private void SaveGame()
+    {
+        _currentSave ??= new GameSaveData();
+        _currentSave.CollectedObjectiveCheckpoints ??= new List<int>();
+        _currentSave.CollectedStarCheckpoints ??= new List<int>();
+        _currentSave.CollectedObjectiveKeys ??= new List<string>();
+
+        _currentSave.CurrentCheckpoint = _currentCheckpoint;
+        _currentSave.CollectedStars = collectedStarsCount;
+        _currentSave.HasWallJump = player?.CanWallJump ?? false;
+        _currentSave.HasDash = player?.CanDash ?? false;
+        _currentSave.Save();
+    }
+
+    private static string GetObjectiveSaveKey(Objective objective)
+    {
+        if (objective == null)
+            return string.Empty;
+
+        string skill = objective.Skill?.Trim().ToLowerInvariant() ?? string.Empty;
+        if (!string.IsNullOrEmpty(skill))
+            return $"skill:{skill}";
+
+        if (objective.Checkpoint > 0)
+            return $"checkpoint:{objective.Checkpoint}";
+
+        return $"pos:{(int)objective.Position.X}:{(int)objective.Position.Y}";
+    }
+
+    private Vector2 ResolveCheckpointSpawn(int checkpoint)
+    {
+        foreach (var (position, checkpointId, _) in stage.StarSpawnData)
+        {
+            if (checkpointId == checkpoint)
+            {
+                return new Vector2(position.X - 8f, position.Y - 16f);
+            }
+        }
+
+        return stage.PlayerSpawn;
+    }
+
     private void UpdateCameraImmediate()
     {
         float viewportWidth = GraphicsDevice.Viewport.Width / WorldZoom;
-        float maxCameraX = Math.Max(0, stage.StageWidthPixels - viewportWidth);
-        float cameraX = Math.Clamp(player.Position.X - 250f, 0, maxCameraX);
+        float viewportHeight = GraphicsDevice.Viewport.Height / WorldZoom;
 
-        cameraTransform = Matrix.CreateTranslation(-cameraX, 0, 0)
+        // Center camera on player with vertical offset (show more above player)
+        float cameraYOffset = -60f;
+        float cameraX = player.Position.X + 16 - viewportWidth / 2;
+        float cameraY = player.Position.Y + 16 - viewportHeight / 2 + cameraYOffset;
+
+        // Clamp to stage bounds
+        // X: prevent showing outside left/right
+        float minCameraX = 0;
+        float maxCameraX = Math.Max(0, stage.StageWidthPixels - viewportWidth);
+        // Y: allow camera to go above stage (follow player upward), but not below stage bottom
+        float minCameraY = float.MinValue;
+        float maxCameraY = Math.Max(0, stage.StageHeightPixels - viewportHeight);
+
+        // If stage is smaller than viewport, center the stage
+        if (stage.StageWidthPixels < viewportWidth)
+        {
+            cameraX = -(viewportWidth - stage.StageWidthPixels) / 2;
+            minCameraX = cameraX;
+            maxCameraX = cameraX;
+        }
+        if (stage.StageHeightPixels < viewportHeight)
+        {
+            cameraY = -(viewportHeight - stage.StageHeightPixels) / 2;
+            minCameraY = cameraY;
+            maxCameraY = cameraY;
+        }
+
+        cameraX = Math.Clamp(cameraX, minCameraX, maxCameraX);
+        cameraY = Math.Clamp(cameraY, minCameraY, maxCameraY);
+
+        cameraX = MathF.Round(cameraX);
+        cameraY = MathF.Round(cameraY);
+
+        currentCameraX = cameraX;
+        currentCameraY = cameraY;
+        cameraVelocityX = 0f;
+        cameraVelocityY = 0f;
+
+        cameraTransform = Matrix.CreateTranslation(-cameraX, -cameraY, 0)
                         * Matrix.CreateScale(WorldZoom, WorldZoom, 1f);
     }
 }
