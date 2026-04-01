@@ -550,6 +550,8 @@ public class Game1 : Game
                     System.Diagnostics.Debug.WriteLine("Dash unlocked!");
                 }
                 
+                SaveGame(); // Save when collecting objectives/skills
+
                 sfxStar.Play(); // Play collection sound
             }
         }

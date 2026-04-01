@@ -624,8 +624,8 @@ namespace GalactaJumperMo.Classes
                     // value 2 = wall_jump (wall jump enabled)
                     // value 3 = girder (one-way platform - can jump through from below)
                     // value 4 = brick (solid collision like walls)
-                    // value 5 = machineblock (solid collision like walls)
-                    if (value == 1 || value == 4 || value == 5)
+                    // value 7 = machineblock (solid collision like walls)
+                    if (value == 1 || value == 4 || value == 5 || value == 7)
                     {
                         StaticPlatforms.Add(dest);
                     }
