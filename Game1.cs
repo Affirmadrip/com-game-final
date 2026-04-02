@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using GalactaJumperMo.Classes;
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Media;
 
 namespace GalactaJumperMo;
 
@@ -17,7 +18,7 @@ public class Game1 : Game
     private SpriteBatch _spriteBatch;
 
     // ── Game state ────────────────────────────────────────────────────────────
-    private enum GameState { MainMenu, SaveLoad, Playing, Paused, GameOver, Tutorial, Settings }
+    private enum GameState { MainMenu, SaveLoad, Playing, Paused, GameOver, Complete, Tutorial, Settings }
     private GameState _gameState = GameState.MainMenu;
     private GameState _preSettingsState = GameState.MainMenu;
 
@@ -28,6 +29,7 @@ public class Game1 : Game
     private SettingsScreen _settings;
     private PauseScreen _pause;
     private GameOverScreen _gameOver;
+    private CompleteScreen _complete;
 
     // ── Save system ───────────────────────────────────────────────────────────
     private GameSaveData _currentSave;
@@ -71,15 +73,22 @@ public class Game1 : Game
     SoundEffect sfxDash;
     SoundEffect sfxStar;
 
+    private Song menuBgm;
+    private Song stageBgm;
+    private Song _currentSong;
+
+    private bool _soundEnabled = true;
+    private bool _musicEnabled = true;
+    private float _masterVolume = 0.35f;
+    private float _sfxVolume = 1f;
     private float shakeTimer = 0f;
     private const float shakeDuration = 0.0f;
     private const float shakeStrength = 0f;
     private Vector2 shakeOffset = Vector2.Zero;
     private Random shakeRng = new Random();
 
-    // true = countdown enabled, false = unlimited time
-    private bool _isTimeLimited = false;
-    private float timeLeft = 120f;
+    // Tracks total play time for the current run
+    private float elapsedTime = 0f;
     private Matrix cameraTransform;
     private float currentCameraX = 0f;
     private float currentCameraY = 0f;
@@ -131,6 +140,13 @@ public class Game1 : Game
         sfxDash = Content.Load<SoundEffect>("Audio/dash");
         sfxStar = Content.Load<SoundEffect>("Audio/starcorrect"); 
 
+        menuBgm = Content.Load<Song>("Audio/main_menu_bgm");
+        stageBgm = Content.Load<Song>("Audio/stage_bgm");
+
+        MediaPlayer.IsRepeating = true;
+        PlayMenuBgm();
+        ApplyAudioSettings();
+        
         starTexture = Content.Load<Texture2D>("Star/starcoin");
 
         ghostTexture = Content.Load<Texture2D>("Enemies/ghost/ghost_sprites");
@@ -158,6 +174,7 @@ public class Game1 : Game
     private void Resume()
     {
         _gameState = GameState.Playing;
+        PlayStageBgm();
     }
 
     private void GoToMainMenu()
@@ -165,6 +182,7 @@ public class Game1 : Game
         bool hasSaveData = GameSaveData.SaveExists();
         _mainMenu = new MainMenuScreen(_titleFont, _menuFont, pixel, hasSaveData: hasSaveData);
         _gameState = GameState.MainMenu;
+        PlayMenuBgm();
     }
 
     private void TriggerGameOver(string reason)
@@ -173,12 +191,34 @@ public class Game1 : Game
         _gameState = GameState.GameOver;
     }
 
+    private void TriggerComplete()
+    {
+        int totalStars = stage?.StarSpawnData.Count ?? 0;
+        int collectedStars = _currentSave?.CollectedStarCheckpoints?.Count ?? 0;
+
+        string sideQuestText = $"Collected {collectedStars} / {totalStars} stars";
+
+        TimeSpan played = TimeSpan.FromSeconds(elapsedTime);
+        string timeText = played.ToString(@"mm\:ss");
+
+        _complete = new CompleteScreen(_titleFont, _menuFont, pixel, sideQuestText, timeText);
+        _gameState = GameState.Complete;
+    }
     private void OpenSettings()
     {
         _preSettingsState = _gameState;
-        _settings = new SettingsScreen(_titleFont, _menuFont, pixel);
+        _settings = new SettingsScreen(
+            _titleFont,
+            _menuFont,
+            pixel,
+            _soundEnabled,
+            _musicEnabled,
+            _masterVolume,
+            _sfxVolume
+        );
         _gameState = GameState.Settings;
     }
+
 
     // star drops from enemy
     private void HandleEnemyDeath(Vector2 deathPosition)
@@ -194,6 +234,56 @@ public class Game1 : Game
         }
 
         totalEnemiesForDrop--;
+    }
+
+    private void PlayMenuBgm()
+    {
+        if (_currentSong == menuBgm) return;
+
+        _currentSong = menuBgm;
+
+        if (_musicEnabled && menuBgm != null)
+        {
+            MediaPlayer.Play(menuBgm);
+            MediaPlayer.IsRepeating = true;
+            MediaPlayer.Volume = MathHelper.Clamp(_masterVolume, 0f, 1f);
+        }
+        else
+        {
+            MediaPlayer.Stop();
+        }
+    }
+
+    private void PlayStageBgm()
+    {
+        if (_currentSong == stageBgm) return;
+
+        _currentSong = stageBgm;
+
+        if (_musicEnabled && stageBgm != null)
+        {
+            MediaPlayer.Play(stageBgm);
+            MediaPlayer.IsRepeating = true;
+            MediaPlayer.Volume = MathHelper.Clamp(_masterVolume, 0f, 1f);
+        }
+        else
+        {
+            MediaPlayer.Stop();
+        }
+    }
+
+    private void ApplyAudioSettings()
+    {
+        MediaPlayer.Volume = _musicEnabled ? MathHelper.Clamp(_masterVolume, 0f, 1f) : 0f;
+    }
+
+    private void PlaySfx(SoundEffect sfx)
+    {
+        if (sfx == null) return;
+        if (!_soundEnabled) return;
+
+        float volume = MathHelper.Clamp(_masterVolume * _sfxVolume * 1.5f, 0f, 1f);
+        sfx.Play(volume, 0f, 0f);
     }
 
     protected override void Update(GameTime gameTime)
@@ -216,6 +306,7 @@ public class Game1 : Game
                         _currentSave = new GameSaveData();
                         BuildStageAndActors(loadFromSave: false);
                         _gameState = GameState.Playing;
+                        PlayStageBgm();
                         break;
                     case MenuAction.Tutorial:
                         _tutorial = new TutorialScreen(_titleFont, _menuFont, pixel);
@@ -238,11 +329,13 @@ public class Game1 : Game
                         _currentSave = _saveLoad.GetSaveData();
                         BuildStageAndActors(loadFromSave: true);
                         _gameState = GameState.Playing;
+                        PlayStageBgm();
                         break;
                     case SaveLoadAction.NewGame:
                         _currentSave = new GameSaveData();
                         BuildStageAndActors(loadFromSave: false);
                         _gameState = GameState.Playing;
+                        PlayStageBgm();
                         break;
                     case SaveLoadAction.DeleteSave:
                         GameSaveData.DeleteSave();
@@ -262,6 +355,19 @@ public class Game1 : Game
 
             case GameState.Settings:
                 _settings.Update(gameTime, sw, sh);
+
+                _soundEnabled = _settings.SoundEnabled;
+                _musicEnabled = _settings.MusicEnabled;
+                _masterVolume = _settings.MasterVolume;
+                _sfxVolume = _settings.SfxVolume;
+
+                ApplyAudioSettings();
+
+                if (_preSettingsState == GameState.MainMenu)
+                    PlayMenuBgm();
+                else
+                    PlayStageBgm();
+
                 if (_settings.PendingAction == SettingsAction.Back)
                 {
                     if (_preSettingsState == GameState.MainMenu)
@@ -299,6 +405,7 @@ public class Game1 : Game
                     case GameOverAction.Retry:
                         BuildStageAndActors(retryFromCheckpoint: true);
                         _gameState = GameState.Playing;
+                        PlayStageBgm();
                         break;
                     case GameOverAction.MainMenu:
                         GoToMainMenu();
@@ -308,7 +415,19 @@ public class Game1 : Game
                         break;
                 }
                 break;
-        }
+            case GameState.Complete:
+                _complete.Update(gameTime, sw, sh);
+                switch (_complete.PendingAction)
+                {
+                    case CompleteAction.MainMenu:
+                        GoToMainMenu();
+                        break;
+                    case CompleteAction.Exit:
+                        Exit();
+                        break;
+                }
+                break;
+                    }
 
         previousKeyboard = keyboard;
         base.Update(gameTime);
@@ -323,6 +442,7 @@ public class Game1 : Game
         }
 
         float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+        elapsedTime += dt;
 
         foreach (var mp in stage.MovingPlatforms)
              mp.Update(gameTime);
@@ -330,6 +450,16 @@ public class Game1 : Game
         stage.SyncPlatforms();
 
         player.Update(gameTime, stage);
+
+        // Goal
+        foreach (var goal in stage.Goals)
+        {
+            if (goal.CheckCollision(player.Bounds))
+            {
+                TriggerComplete();
+                return;
+            }
+        }
 
         foreach (var mp in stage.MovingPlatforms)
         {
@@ -347,8 +477,8 @@ public class Game1 : Game
         }
     }
 
-        if (player.JustJumped) sfxJump.Play();
-        if (player.JustDashed) sfxDash.Play();
+        if (player.JustJumped) PlaySfx(sfxJump);
+        if (player.JustDashed) PlaySfx(sfxDash);
 
         foreach (var star in stars)
         {
@@ -375,7 +505,7 @@ public class Game1 : Game
 
                 SaveGame();
                 
-                sfxStar.Play();
+                PlaySfx(sfxStar);
             }
         }
         Rectangle feet = new Rectangle(
@@ -391,7 +521,7 @@ public class Game1 : Game
             if (player.Bounds.Intersects(spike.Hitbox) && !player.IsInvincible)
             {
                 currentHealth--;
-                sfxHurt.Play();
+                PlaySfx(sfxHurt);
                 player.TriggerIncinvincible();
                 shakeTimer = shakeDuration;
 
@@ -430,7 +560,7 @@ public class Game1 : Game
                 else if (!player.IsInvincible)
                 {
                     currentHealth--;
-                    sfxHurt.Play();
+                    PlaySfx(sfxHurt);
                     player.TriggerIncinvincible();
                     shakeTimer = shakeDuration;
 
@@ -460,7 +590,7 @@ public class Game1 : Game
                 else if (!player.IsInvincible)
                 {
                     currentHealth--;
-                    sfxHurt.Play();
+                    PlaySfx(sfxHurt);
                     player.TriggerIncinvincible();
                     shakeTimer = shakeDuration;
 
@@ -490,7 +620,7 @@ public class Game1 : Game
                 else if (!player.IsInvincible)
                 {
                     currentHealth--;
-                    sfxHurt.Play();
+                    PlaySfx(sfxHurt);
                     player.TriggerIncinvincible();
                     shakeTimer = shakeDuration;
 
@@ -552,7 +682,7 @@ public class Game1 : Game
                 
                 SaveGame(); // Save when collecting objectives/skills
 
-                sfxStar.Play(); // Play collection sound
+                PlaySfx(sfxStar);
             }
         }
 
@@ -565,7 +695,7 @@ public class Game1 : Game
             {
                 spring.Trigger();
                 player.ApplyKnockback(spring.GetBounceForce(player.FacingLeft));
-                sfxJump.Play();
+                PlaySfx(sfxJump);
             }
         }
 
@@ -598,16 +728,6 @@ public class Game1 : Game
             shakeOffset = Vector2.Zero;
         }
 
-        if (_isTimeLimited)
-        {
-            timeLeft -= dt;
-            if (timeLeft <= 0f)
-            {
-                timeLeft = 0f;
-                TriggerGameOver("Time's up.");
-                return;
-            }
-        }
 
         if (player.Position.Y > stage.VoidY)
         {
@@ -724,6 +844,13 @@ public class Game1 : Game
                 _spriteBatch.End();
                 break;
 
+            case GameState.Complete:
+                GraphicsDevice.Clear(new Color(4, 6, 16));
+                _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                _complete.Draw(_spriteBatch, sw, sh);
+                _spriteBatch.End();
+                break;
+
             case GameState.Playing:
             case GameState.Paused:
                 DrawGameWorld();
@@ -773,7 +900,7 @@ public class Game1 : Game
 
         // Draw springs
         foreach (var spring in stage.Springs)
-            spring.Draw(_spriteBatch, pixel);
+            spring.Draw(_spriteBatch, tilemap);
 
         // Draw conveyors
         foreach (var conveyor in stage.Conveyors)
@@ -828,16 +955,9 @@ public class Game1 : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-        // draw timer
-        if (_isTimeLimited)
-        {
-            Color timerColor = timeLeft < 10 ? Color.Red : Color.White;
-            _spriteBatch.DrawString(font, $"Time: {(int)timeLeft}", new Vector2(20, 20), timerColor);
-        }
-        else
-        {
-            _spriteBatch.DrawString(font, "Time: INF", new Vector2(20, 20), Color.White);
-        }
+        TimeSpan played = TimeSpan.FromSeconds(elapsedTime);
+        string timeText = $"Time: {played:mm\\:ss}";
+        _spriteBatch.DrawString(font, timeText, new Vector2(20, 20), Color.White);
 
         // draw hearts
         int heartSize = 80;
@@ -975,7 +1095,11 @@ public class Game1 : Game
 
         player.ResetVelocity();
 
-        timeLeft = 120f;
+        if (loadFromSave && _currentSave != null)
+            elapsedTime = _currentSave.ElapsedTime;
+        else
+            elapsedTime = 0f;
+
         currentHealth = maxHealth;
 
         UpdateCameraImmediate();
@@ -992,6 +1116,7 @@ public class Game1 : Game
         _currentSave.CollectedStars = collectedStarsCount;
         _currentSave.HasWallJump = player?.CanWallJump ?? false;
         _currentSave.HasDash = player?.CanDash ?? false;
+        _currentSave.ElapsedTime = elapsedTime;
         _currentSave.Save();
     }
 

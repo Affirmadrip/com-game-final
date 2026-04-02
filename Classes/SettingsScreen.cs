@@ -47,21 +47,28 @@ namespace GalactaJumperMo.Classes
 
         public SettingsAction PendingAction { get; private set; } = SettingsAction.None;
 
-        public SettingsScreen(SpriteFont titleFont, SpriteFont menuFont, Texture2D pixel)
+        public SettingsScreen(
+            SpriteFont titleFont,
+            SpriteFont menuFont,
+            Texture2D pixel,
+            bool soundEnabled = true,
+            bool musicEnabled = true,
+            float masterVolume = 0.8f,
+            float sfxVolume = 0.8f)
         {
             _titleFont = titleFont;
             _menuFont  = menuFont;
             _pixel     = pixel;
-            _prevKb    = Keyboard.GetState();   // key-bleed fix
+            _prevKb    = Keyboard.GetState();
             _prevMs    = Mouse.GetState();
 
             _items = new SettingItem[]
             {
-                new SettingItem { Label = "Sound Effects",  Type = SettingType.Toggle, BoolValue  = true,  FloatValue = 0f   },
-                new SettingItem { Label = "Music",          Type = SettingType.Toggle, BoolValue  = true,  FloatValue = 0f   },
-                new SettingItem { Label = "Master Volume",  Type = SettingType.Slider, BoolValue  = false, FloatValue = 0.8f },
-                new SettingItem { Label = "SFX Volume",     Type = SettingType.Slider, BoolValue  = false, FloatValue = 0.8f },
-                new SettingItem { Label = "Back",           Type = SettingType.Back,   BoolValue  = false, FloatValue = 0f   },
+                new SettingItem { Label = "Sound Effects",  Type = SettingType.Toggle, BoolValue  = soundEnabled, FloatValue = 0f },
+                new SettingItem { Label = "Music",          Type = SettingType.Toggle, BoolValue  = musicEnabled, FloatValue = 0f },
+                new SettingItem { Label = "Master Volume",  Type = SettingType.Slider, BoolValue  = false, FloatValue = masterVolume },
+                new SettingItem { Label = "SFX Volume",     Type = SettingType.Slider, BoolValue  = false, FloatValue = sfxVolume },
+                new SettingItem { Label = "Back",           Type = SettingType.Back,   BoolValue  = false, FloatValue = 0f },
             };
 
             _itemReveal = new float[_items.Length];

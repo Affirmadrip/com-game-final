@@ -23,6 +23,19 @@
 		"Tiles.png"
 	],
 	"entities": {
+		"Goal": [
+			{
+				"id": "Goal",
+				"iid": "051ea780-21a0-11f1-a71f-8bc693f52c3c",
+				"layer": "Goal",
+				"x": 2128,
+				"y": 368,
+				"width": 16,
+				"height": 16,
+				"color": 11882632,
+				"customFields" : {}
+			}
+		],
 		"Conveyor": [
 			{
 				"id": "Conveyor",
@@ -181,9 +194,9 @@
 				"y": 4064,
 				"width": 16,
 				"height": 16,
-				"color": 4073265,
+				"color": 9953535,
 				"customFields": {
-					"Checkpoint": "0"
+					"Checkpoint": "1"
 				}
 			}
 		],

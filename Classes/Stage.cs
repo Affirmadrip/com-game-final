@@ -5,7 +5,7 @@ using System;
 using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq; 
+using System.Linq;
 using System.Text.Json;
 using LDtk;
 
@@ -51,13 +51,14 @@ namespace GalactaJumperMo.Classes
 
         public List<MovingPlatform> MovingPlatforms = new List<MovingPlatform>();
         public List<Spike> Spikes = new List<Spike>();
-        
+
         // New LDTK entity systems
         public List<DeathZone> DeathZones = new List<DeathZone>();
         public List<Objective> Objectives = new List<Objective>();
         public List<EnemySpawnData> EnemySpawnDataList = new List<EnemySpawnData>();
         public List<Spring> Springs = new List<Spring>();
         public List<Conveyor> Conveyors = new List<Conveyor>();
+        public List<Goal> Goals = new List<Goal>();
         public List<TitleDisplay> Titles = new List<TitleDisplay>();
 
         public Vector2 PlayerSpawn;
@@ -201,10 +202,10 @@ namespace GalactaJumperMo.Classes
 
                 // Load layers in reverse order (bottom to top for proper drawing)
                 var layers = level.LayerInstances.Reverse().ToArray();
-                
+
                 foreach (var layer in layers)
                 {
-                    // Load auto-generated tiles from ANY layer that has them
+
                     if (layer.AutoLayerTiles != null && layer.AutoLayerTiles.Length > 0)
                     {
                         foreach (var tile in layer.AutoLayerTiles)
@@ -218,7 +219,6 @@ namespace GalactaJumperMo.Classes
                         }
                     }
 
-                    // Load manual grid tiles
                     if (layer.GridTiles != null && layer.GridTiles.Length > 0)
                     {
                         foreach (var tile in layer.GridTiles)
@@ -245,14 +245,11 @@ namespace GalactaJumperMo.Classes
                         {
                             if (entity._Identifier == "Spike")
                             {
-                                // entity.Px is pivot position, need to calculate top-left
-                                // Default pivot is (0.5, 0.5) for Spike
                                 Vector2 pos = new Vector2(
                                     entity.Px.X + levelOffsetX - entity.Width / 2,
                                     entity.Px.Y + levelOffsetY - entity.Height / 2
                                 );
 
-                                // Use default spike tile (48, 144) from tileset
                                 Rectangle tileSource = new Rectangle(48, 144, 16, 16);
                                 if (entity._Tile != null)
                                 {
@@ -276,7 +273,6 @@ namespace GalactaJumperMo.Classes
                         {
                             if (entity._Identifier == "MovingPlatform")
                             {
-                                // Get tile source first to know actual size
                                 Rectangle tileSource = new Rectangle(64, 48, 48, 16);
                                 if (entity._Tile != null)
                                 {
@@ -288,7 +284,6 @@ namespace GalactaJumperMo.Classes
                                     );
                                 }
 
-                                // Use tile size for pivot offset (not entity size)
                                 Vector2 startPos = new Vector2(
                                     entity.Px.X + levelOffsetX - tileSource.Width / 2,
                                     entity.Px.Y + levelOffsetY - tileSource.Height / 2
@@ -296,20 +291,19 @@ namespace GalactaJumperMo.Classes
 
                                 List<Vector2> targetNodes = new List<Vector2>();
 
-                                // Parse TargetNodes field
                                 foreach (var field in entity.FieldInstances)
                                 {
-                                    if (field._Identifier == "TargetNodes" && field._Value is System.Text.Json.JsonElement pointsArray)
+                                    if (field._Identifier == "TargetNodes" && field._Value is JsonElement pointsArray)
                                     {
-                                        if (pointsArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+                                        if (pointsArray.ValueKind == JsonValueKind.Array)
                                         {
                                             foreach (var point in pointsArray.EnumerateArray())
                                             {
-                                                if (point.ValueKind == System.Text.Json.JsonValueKind.Object)
+                                                if (point.ValueKind == JsonValueKind.Object)
                                                 {
                                                     int cx = point.GetProperty("cx").GetInt32();
                                                     int cy = point.GetProperty("cy").GetInt32();
-                                                    // Use tile size for node position offset
+
                                                     Vector2 nodePos = new Vector2(
                                                         levelOffsetX + cx * TileSize + TileSize / 2 - tileSource.Width / 2,
                                                         levelOffsetY + cy * TileSize + TileSize / 2 - tileSource.Height / 2
@@ -329,268 +323,291 @@ namespace GalactaJumperMo.Classes
                                     targetNodes,
                                     tileSource
                                 ));
-                           }
-                       }
-                   }
+                            }
+                        }
+                    }
 
-                   // Load DeathZone entities with ZoneTitle
-                   if (layer._Identifier == "DeathZone" && layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "DeathZone")
-                           {
-                               // DeathZone uses pivot (0, 0) and is resizable
-                               Rectangle bounds = new Rectangle(
-                                   entity.Px.X + levelOffsetX,
-                                   entity.Px.Y + levelOffsetY,
-                                   entity.Width,
-                                   entity.Height
-                               );
+                    // Load DeathZone entities with ZoneTitle
+                    if (layer._Identifier == "DeathZone" && layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "DeathZone")
+                            {
+                                Rectangle bounds = new Rectangle(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY,
+                                    entity.Width,
+                                    entity.Height
+                                );
 
-                               string zoneTitle = "You died";
-                               foreach (var field in entity.FieldInstances)
-                               {
-                                   if (field._Identifier == "ZoneTitle" && field._Value is System.Text.Json.JsonElement jsonValue && jsonValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       zoneTitle = jsonValue.ToString().Trim('"');
-                                   }
-                               }
+                                string zoneTitle = "You died";
+                                foreach (var field in entity.FieldInstances)
+                                {
+                                    if (field._Identifier == "ZoneTitle" && field._Value is JsonElement jsonValue && jsonValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        zoneTitle = jsonValue.ToString().Trim('"');
+                                    }
+                                }
 
-                               DeathZones.Add(new DeathZone(bounds, zoneTitle));
-                           }
-                       }
-                   }
+                                DeathZones.Add(new DeathZone(bounds, zoneTitle));
+                            }
+                        }
+                    }
 
-                   // Load skill/objective entities from any entity layer.
-                   if (layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "Skills" || entity._Identifier == "Skill" || entity._Identifier == "Objective")
-                           {
-                               // Skills uses pivot (0, 0)
-                               Vector2 position = new Vector2(
-                                   entity.Px.X + levelOffsetX + entity.Width / 2,
-                                   entity.Px.Y + levelOffsetY + entity.Height / 2
-                               );
+                    // Load skill/objective entities
+                    if (layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Skills" || entity._Identifier == "Skill" || entity._Identifier == "Objective")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX + entity.Width / 2,
+                                    entity.Px.Y + levelOffsetY + entity.Height / 2
+                                );
 
-                               string skill = "";
-                               int checkpoint = 0;
-                               foreach (var field in entity.FieldInstances)
-                               {
-                                   if (field._Identifier == "Skill" && field._Value is System.Text.Json.JsonElement skillValue && skillValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       skill = skillValue.ToString().Trim('"');
-                                   }
-                                   if (field._Identifier == "Checkpoint" && field._Value is System.Text.Json.JsonElement checkpointValue && checkpointValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       checkpoint = ParseCheckpointValue(checkpointValue);
-                                   }
-                               }
+                                string skill = "";
+                                int checkpoint = 0;
+                                foreach (var field in entity.FieldInstances)
+                                {
+                                    if (field._Identifier == "Skill" && field._Value is JsonElement skillValue && skillValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        skill = skillValue.ToString().Trim('"');
+                                    }
+                                    if (field._Identifier == "Checkpoint" && field._Value is JsonElement checkpointValue && checkpointValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        checkpoint = ParseCheckpointValue(checkpointValue);
+                                    }
+                                }
 
-                               // Get tile source for rendering
-                               Rectangle tileSource = new Rectangle(32, 80, 16, 16); // Default
-                               if (entity._Tile != null)
-                               {
-                                   tileSource = new Rectangle(
-                                       entity._Tile.X,
-                                       entity._Tile.Y,
-                                       entity._Tile.W,
-                                       entity._Tile.H
-                                   );
-                               }
+                                Rectangle tileSource = new Rectangle(32, 80, 16, 16);
+                                if (entity._Tile != null)
+                                {
+                                    tileSource = new Rectangle(
+                                        entity._Tile.X,
+                                        entity._Tile.Y,
+                                        entity._Tile.W,
+                                        entity._Tile.H
+                                    );
+                                }
 
-                               Objectives.Add(new Objective(position, skill, checkpoint, tileSource));
-                           }
-                       }
-                   }
+                                Objectives.Add(new Objective(position, skill, checkpoint, tileSource));
+                            }
+                        }
+                    }
 
-                   // Load Enemy entities with MonsterType
-                   if (layer._Identifier == "Enemy" && layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "Enemy")
-                           {
-                               // Enemy uses pivot (0, 0)
-                               Vector2 position = new Vector2(
-                                   entity.Px.X + levelOffsetX,
-                                   entity.Px.Y + levelOffsetY
-                               );
+                    // Load Enemy entities with MonsterType
+                    if (layer._Identifier == "Enemy" && layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Enemy")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY
+                                );
 
-                               MonsterType monsterType = MonsterType.Ghost; // Default
-                               foreach (var field in entity.FieldInstances)
-                               {
-                                   if (field._Identifier == "MonsterType" && field._Value is System.Text.Json.JsonElement jsonValue && jsonValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       string typeStr = jsonValue.ToString().Trim('"');
-                                       if (Enum.TryParse<MonsterType>(typeStr, true, out MonsterType parsed))
-                                       {
-                                           monsterType = parsed;
-                                       }
-                                   }
-                               }
+                                MonsterType monsterType = MonsterType.Ghost;
+                                foreach (var field in entity.FieldInstances)
+                                {
+                                    if (field._Identifier == "MonsterType" && field._Value is JsonElement jsonValue && jsonValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        string typeStr = jsonValue.ToString().Trim('"');
+                                        if (Enum.TryParse<MonsterType>(typeStr, true, out MonsterType parsed))
+                                        {
+                                            monsterType = parsed;
+                                        }
+                                    }
+                                }
 
-                               EnemySpawnDataList.Add(new EnemySpawnData(position, monsterType));
-                           }
-                       }
-                   }
+                                EnemySpawnDataList.Add(new EnemySpawnData(position, monsterType));
+                            }
+                        }
+                    }
 
-                   // Load Spring entities
-                   if (layer._Identifier == "Spring" && layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "Spring")
-                           {
-                               // Springs in this project use top-left pivot (0,0).
-                               Vector2 position = new Vector2(
-                                   entity.Px.X + levelOffsetX,
-                                   entity.Px.Y + levelOffsetY
-                               );
+                    // Load Spring entities
+                    if (layer._Identifier == "Spring" && layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Spring")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY
+                                );
 
-                               Rectangle tileSource = new Rectangle(80, 144, 16, 16); // Default spring tile
-                               if (entity._Tile != null)
-                               {
-                                   tileSource = new Rectangle(
-                                       entity._Tile.X,
-                                       entity._Tile.Y,
-                                       entity._Tile.W,
-                                       entity._Tile.H
-                                   );
-                               }
+                                Rectangle tileSource = new Rectangle(80, 144, 16, 16);
+                                if (entity._Tile != null)
+                                {
+                                    tileSource = new Rectangle(
+                                        entity._Tile.X,
+                                        entity._Tile.Y,
+                                        entity._Tile.W,
+                                        entity._Tile.H
+                                    );
+                                }
 
-                               Springs.Add(new Spring(position, tileSource));
-                           }
-                       }
-                   }
+                                Springs.Add(new Spring(position, tileSource));
+                            }
+                        }
+                    }
 
-                   // Load Conveyor entities from any entity layer.
-                   if (layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "Conveyor")
-                           {
-                               // Conveyor uses pivot (0, 0)
-                               Vector2 position = new Vector2(
-                                   entity.Px.X + levelOffsetX,
-                                   entity.Px.Y + levelOffsetY
-                               );
+                    // Load Conveyor entities
+                    if (layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Conveyor")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY
+                                );
 
-                               ConveyorDirection direction = ConveyorDirection.Right; // Default
-                               foreach (var field in entity.FieldInstances)
-                               {
-                                   if (field._Identifier == "Direction" && field._Value is System.Text.Json.JsonElement jsonValue && jsonValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       string dirStr = jsonValue.ToString().Trim('"');
-                                       if (Enum.TryParse<ConveyorDirection>(dirStr, true, out ConveyorDirection parsed))
-                                       {
-                                           direction = parsed;
-                                       }
-                                   }
-                               }
+                                ConveyorDirection direction = ConveyorDirection.Right;
+                                foreach (var field in entity.FieldInstances)
+                                {
+                                    if (field._Identifier == "Direction" && field._Value is JsonElement jsonValue && jsonValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        string dirStr = jsonValue.ToString().Trim('"');
+                                        if (Enum.TryParse<ConveyorDirection>(dirStr, true, out ConveyorDirection parsed))
+                                        {
+                                            direction = parsed;
+                                        }
+                                    }
+                                }
 
-                               Rectangle tileSource = Rectangle.Empty;
-                               if (entity._Tile != null)
-                               {
-                                   tileSource = new Rectangle(
-                                       entity._Tile.X,
-                                       entity._Tile.Y,
-                                       entity._Tile.W,
-                                       entity._Tile.H
-                                   );
-                               }
-                               else if (!TryGetEntityDefaultTileSource("Conveyor", out tileSource))
-                               {
-                                   tileSource = new Rectangle(0, 0, Math.Max(1, entity.Width), Math.Max(1, entity.Height));
-                               }
+                                Rectangle tileSource = Rectangle.Empty;
+                                if (entity._Tile != null)
+                                {
+                                    tileSource = new Rectangle(
+                                        entity._Tile.X,
+                                        entity._Tile.Y,
+                                        entity._Tile.W,
+                                        entity._Tile.H
+                                    );
+                                }
+                                else if (!TryGetEntityDefaultTileSource("Conveyor", out tileSource))
+                                {
+                                    tileSource = new Rectangle(0, 0, Math.Max(1, entity.Width), Math.Max(1, entity.Height));
+                                }
 
-                               int conveyorWidth = Math.Max(entity.Width, tileSource.Width);
-                               int conveyorHeight = Math.Max(entity.Height, tileSource.Height);
-                               Conveyors.Add(new Conveyor(position, conveyorWidth, conveyorHeight, direction, tileSource));
-                           }
-                       }
-                   }
+                                int conveyorWidth = Math.Max(entity.Width, tileSource.Width);
+                                int conveyorHeight = Math.Max(entity.Height, tileSource.Height);
+                                Conveyors.Add(new Conveyor(position, conveyorWidth, conveyorHeight, direction, tileSource));
+                            }
+                        }
+                    }
 
-                   // Load Titles entities
-                   if (layer._Identifier == "Titles" && layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "Title" || entity._Identifier == "Titles")
-                           {
-                               // Title uses pivot (0.5, 0.5) - center
-                               Vector2 position = new Vector2(
-                                   entity.Px.X + levelOffsetX,
-                                   entity.Px.Y + levelOffsetY
-                               );
+                    // Goal entities
+                    if (layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Goal")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY
+                                );
 
-                               string title = "";
-                               foreach (var field in entity.FieldInstances)
-                               {
-                                   if (field._Identifier == "Title" && field._Value is System.Text.Json.JsonElement jsonValue && jsonValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       title = jsonValue.ToString().Trim('"');
-                                   }
-                               }
+                                Goals.Add(new Goal(position));
+                            }
+                        }
+                    }
 
-                               Titles.Add(new TitleDisplay(position, title));
-                           }
-                       }
-                   }
+                    // Load Titles entities
+                    if (layer._Identifier == "Titles" && layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Title" || entity._Identifier == "Titles")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY
+                                );
 
-                   // Load Star entities with checkpoint support from any entity layer.
-                   if (layer.EntityInstances != null)
-                   {
-                       foreach (var entity in layer.EntityInstances)
-                       {
-                           if (entity._Identifier == "Star")
-                           {
-                               // Star uses top-left position in this project.
-                               Vector2 position = new Vector2(
-                                   entity.Px.X + levelOffsetX,
-                                   entity.Px.Y + levelOffsetY
-                               );
+                                string title = "";
+                                foreach (var field in entity.FieldInstances)
+                                {
+                                    if (field._Identifier == "Title" && field._Value is JsonElement jsonValue && jsonValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        title = jsonValue.ToString().Trim('"');
+                                    }
+                                }
 
-                               int checkpoint = 0;
-                               bool hasExplicitCheckpoint = false;
-                               foreach (var field in entity.FieldInstances)
-                               {
-                                   if (field._Identifier == "Checkpoint" && field._Value is System.Text.Json.JsonElement checkpointValue && checkpointValue.ValueKind != System.Text.Json.JsonValueKind.Null)
-                                   {
-                                       checkpoint = ParseCheckpointValue(checkpointValue);
-                                       hasExplicitCheckpoint = true;
-                                   }
-                               }
+                                Titles.Add(new TitleDisplay(position, title));
+                            }
+                        }
+                    }
 
-                               // If no checkpoint field is defined, use star order as checkpoint id.
-                               if (!hasExplicitCheckpoint)
-                               {
-                                   checkpoint = StarSpawnData.Count + 1;
-                               }
+                    // Load Star entities with checkpoint
+                    if (layer.EntityInstances != null)
+                    {
+                        foreach (var entity in layer.EntityInstances)
+                        {
+                            if (entity._Identifier == "Star")
+                            {
+                                Vector2 position = new Vector2(
+                                    entity.Px.X + levelOffsetX,
+                                    entity.Px.Y + levelOffsetY
+                                );
 
-                               Rectangle tileSource = new Rectangle(32, 0, 16, 16);
-                               if (entity._Tile != null)
-                               {
-                                   tileSource = new Rectangle(
-                                       entity._Tile.X,
-                                       entity._Tile.Y,
-                                       entity._Tile.W,
-                                       entity._Tile.H
-                                   );
-                               }
+                                int checkpoint = 0;
+                                bool hasExplicitCheckpoint = false;
 
-                               StarSpawnData.Add((position, checkpoint, tileSource));
-                               StarSpawns.Add(position); // Keep for backward compatibility
-                           }
-                       }
-                   }
-               }
-           }
+                                foreach (var field in entity.FieldInstances)
+                                {
+                                    if (field._Identifier == "Checkpoint" &&
+                                        field._Value is JsonElement checkpointValue &&
+                                        checkpointValue.ValueKind != JsonValueKind.Null)
+                                    {
+                                        if (checkpointValue.ValueKind == JsonValueKind.Number)
+                                        {
+                                            checkpoint = ParseCheckpointValue(checkpointValue);
+                                            hasExplicitCheckpoint = true;
+                                        }
+                                        else if (checkpointValue.ValueKind == JsonValueKind.String)
+                                        {
+                                            string raw = checkpointValue.GetString();
+                                            if (!string.IsNullOrWhiteSpace(raw))
+                                            {
+                                                checkpoint = ParseCheckpointValue(checkpointValue);
+                                                hasExplicitCheckpoint = true;
+                                            }
+                                        }
+                                    }
+                                }
 
-           StageWidthPixels = totalWidth;
+                                if (!hasExplicitCheckpoint)
+                                {
+                                    checkpoint = StarSpawnData.Count + 1;
+                                }
+
+                                Rectangle tileSource = new Rectangle(32, 0, 16, 16);
+                                if (entity._Tile != null)
+                                {
+                                    tileSource = new Rectangle(
+                                        entity._Tile.X,
+                                        entity._Tile.Y,
+                                        entity._Tile.W,
+                                        entity._Tile.H
+                                    );
+                                }
+
+                                StarSpawnData.Add((position, checkpoint, tileSource));
+                                StarSpawns.Add(position);
+                            }
+                        }
+                    }
+                }
+            }
+
+            StageWidthPixels = totalWidth;
             StageHeightPixels = maxHeight;
             VoidY = maxHeight + 200;
         }
@@ -620,11 +637,6 @@ namespace GalactaJumperMo.Classes
                         gridSize
                     );
 
-                    // value 1 = walls (normal collision)
-                    // value 2 = wall_jump (wall jump enabled)
-                    // value 3 = girder (one-way platform - can jump through from below)
-                    // value 4 = brick (solid collision like walls)
-                    // value 7 = machineblock (solid collision like walls)
                     if (value == 1 || value == 4 || value == 5 || value == 7)
                     {
                         StaticPlatforms.Add(dest);
@@ -641,15 +653,15 @@ namespace GalactaJumperMo.Classes
             }
         }
 
-        private static int ParseCheckpointValue(System.Text.Json.JsonElement checkpointValue)
+        private static int ParseCheckpointValue(JsonElement checkpointValue)
         {
-            if (checkpointValue.ValueKind == System.Text.Json.JsonValueKind.Number &&
+            if (checkpointValue.ValueKind == JsonValueKind.Number &&
                 checkpointValue.TryGetInt32(out int numericValue))
             {
                 return numericValue;
             }
 
-            if (checkpointValue.ValueKind == System.Text.Json.JsonValueKind.String)
+            if (checkpointValue.ValueKind == JsonValueKind.String)
             {
                 string raw = checkpointValue.GetString();
                 if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out int parsedValue))
@@ -742,10 +754,8 @@ namespace GalactaJumperMo.Classes
 
         private void SetDefaultPlayerSpawn()
         {
-            // Default fallback position
             PlayerSpawn = new Vector2(100, 300);
 
-            // Try to find PlayerStart entity from LDtk
             foreach (LDtkLevel level in _levels)
             {
                 int levelOffsetX = (int)level.WorldX;
@@ -759,7 +769,6 @@ namespace GalactaJumperMo.Classes
                         {
                             if (entity._Identifier == "PlayerStart")
                             {
-                                // Use exact world position from LDtk PlayerStart.
                                 PlayerSpawn = new Vector2(
                                     entity.Px.X + levelOffsetX,
                                     entity.Px.Y + levelOffsetY
@@ -772,7 +781,6 @@ namespace GalactaJumperMo.Classes
                 }
             }
 
-            // Fallback to TOC world coordinates when PlayerStart entity isn't in loaded layer instances.
             if (TrySetPlayerSpawnFromToc())
                 return;
 

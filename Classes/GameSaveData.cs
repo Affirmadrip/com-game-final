@@ -20,6 +20,7 @@ namespace GalactaJumperMo.Classes
         public List<int> CollectedObjectiveCheckpoints { get; set; } = new List<int>();
         public List<int> CollectedStarCheckpoints { get; set; } = new List<int>();
         public List<string> CollectedObjectiveKeys { get; set; } = new List<string>();
+        public float ElapsedTime { get; set; }
 
         private static string SaveFilePath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
