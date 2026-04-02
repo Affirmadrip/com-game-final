@@ -168,6 +168,32 @@
 				"customFields": {
 					"MonsterType": "Bat"
 				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "d77f1dc0-21a0-11f1-8166-138995578953",
+				"layer": "Enemy",
+				"x": 592,
+				"y": 4576,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "6fa094d0-21a0-11f1-8166-d5f269d2e32b",
+				"layer": "Enemy",
+				"x": 1328,
+				"y": 3952,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
 			}
 		],
 		"Skills": [
@@ -188,10 +214,10 @@
 		"Star": [
 			{
 				"id": "Star",
-				"iid": "729d6250-21a0-11f1-b567-0564e08d0d90",
+				"iid": "242aa630-21a0-11f1-8166-3db563c05d6f",
 				"layer": "Objective",
-				"x": 112,
-				"y": 4064,
+				"x": 2112,
+				"y": 4688,
 				"width": 16,
 				"height": 16,
 				"color": 9953535,
@@ -586,6 +612,19 @@
 				"width": 16,
 				"height": 16,
 				"color": 14120515,
+				"customFields" : {}
+			}
+		],
+		"PlayerStart": [
+			{
+				"id": "PlayerStart",
+				"iid": "2917dbb0-21a0-11f1-8166-5f519664fe90",
+				"layer": "PlayerStart",
+				"x": 176,
+				"y": 4048,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
 				"customFields" : {}
 			}
 		]

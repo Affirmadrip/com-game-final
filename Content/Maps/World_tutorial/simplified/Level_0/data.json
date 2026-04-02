@@ -47,19 +47,6 @@
 				}
 			}
 		],
-		"PlayerStart": [
-			{
-				"id": "PlayerStart",
-				"iid": "3880e3d0-21a0-11f1-a3e0-b7a540938d3c",
-				"layer": "Objective",
-				"x": 208,
-				"y": 416,
-				"width": 16,
-				"height": 16,
-				"color": 12470831,
-				"customFields" : {}
-			}
-		],
 		"Spike": [
 			{
 				"id": "Spike",

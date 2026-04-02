@@ -47,9 +47,6 @@ public class Game1 : Game
     // variables of star and UI
     private Texture2D starTexture;
     private List<Star> stars;
-    private int totalEnemiesForDrop;
-    private int remainingStarsToDrop;
-    private Random dropRng = new Random();
     private int collectedStarsCount = 0; // collected stars
 
     private Texture2D pixel;
@@ -217,23 +214,6 @@ public class Game1 : Game
             _sfxVolume
         );
         _gameState = GameState.Settings;
-    }
-
-
-    // star drops from enemy
-    private void HandleEnemyDeath(Vector2 deathPosition)
-    {
-        if (totalEnemiesForDrop <= 0) return;
-
-        double dropChance = (double)remainingStarsToDrop / totalEnemiesForDrop;
-
-        if (dropRng.NextDouble() < dropChance)
-        {
-            stars.Add(new Star(starTexture, deathPosition));
-            remainingStarsToDrop--;
-        }
-
-        totalEnemiesForDrop--;
     }
 
     private void PlayMenuBgm()
@@ -551,7 +531,6 @@ public class Game1 : Game
                 {
                     if (!enemy.IsPhaseOut)
                     {
-                        HandleEnemyDeath(enemy.Position);
                         enemies.RemoveAt(i);
                         player.OnEnemyContact();
                         continue;
@@ -582,7 +561,6 @@ public class Game1 : Game
             {
                 if (player.getDashingState)
                 {
-                    HandleEnemyDeath(liz.Position);
                     lizards.RemoveAt(i);
                     player.OnEnemyContact();
                     continue;
@@ -612,7 +590,6 @@ public class Game1 : Game
             {
                 if (player.getDashingState)
                 {
-                    HandleEnemyDeath(bat.Position);
                     bats.RemoveAt(i);
                     player.OnEnemyContact();
                     continue;
@@ -1005,10 +982,7 @@ public class Game1 : Game
         enemies = new List<Enemy>();
         lizards = new List<EnemyLizard>();
         bats = new List<EnemyBat>();
-
-        // On retry, keep enemies removed and respawn only the player at checkpoint.
-        if (!retryFromCheckpoint)
-        {
+       
             // Legacy enemy spawns (keep for backward compatibility)
             foreach (Vector2 spawn in stage.EnemySpawns)
                 enemies.Add(new Enemy(spawn));
@@ -1035,7 +1009,6 @@ public class Game1 : Game
                         break;
                 }
             }
-        }
 
         // Load stars with checkpoint data
         stars = new List<Star>();
@@ -1074,10 +1047,6 @@ public class Game1 : Game
                 return collectedByKey || collectedBySkill;
             });
         }
-
-        totalEnemiesForDrop = enemies.Count + lizards.Count + bats.Count;
-        remainingStarsToDrop = Math.Min(2, totalEnemiesForDrop);
-
         // New game starts at PlayerStart, loading/ retry starts from checkpoint.
         if (loadFromSave && _currentSave != null)
             player.Position = ResolveCheckpointSpawn(_currentCheckpoint);
