@@ -1,0 +1,88 @@
+{
+	"identifier": "Level_0",
+	"uniqueIdentifer": "9431bd20-21a0-11f1-a9e2-f93857db6eca",
+	"x": 0,
+	"y": 0,
+	"width": 2064,
+	"height": 1312,
+	"bgColor": "#696A79",
+	"neighbourLevels": [
+		{
+			"levelIid": "25ab3180-21a0-11f1-8c8e-85a94a60b29f",
+			"dir": "e"
+		}
+	],
+	"customFields" : {},
+	"layers": [
+		"Background.png",
+		"Collisions.png",
+		"Tiles.png"
+	],
+	"entities": {
+		"Titles": [
+			{
+				"id": "Titles",
+				"iid": "509316f0-21a0-11f1-b567-271978a58167",
+				"layer": "Titles",
+				"x": 256,
+				"y": 288,
+				"width": 16,
+				"height": 16,
+				"color": 4098376,
+				"customFields": {
+					"Title": "A D to moves"
+				}
+			},
+			{
+				"id": "Titles",
+				"iid": "558ee080-21a0-11f1-b567-a5ac93138a53",
+				"layer": "Titles",
+				"x": 608,
+				"y": 320,
+				"width": 16,
+				"height": 16,
+				"color": 4098376,
+				"customFields": {
+					"Title": "Spacebar to jump"
+				}
+			}
+		],
+		"PlayerStart": [
+			{
+				"id": "PlayerStart",
+				"iid": "f13d9be0-21a0-11f1-a687-ff1a5ab6d516",
+				"layer": "Objective",
+				"x": 176,
+				"y": 384,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields" : {}
+			}
+		],
+		"Spike": [
+			{
+				"id": "Spike",
+				"iid": "7fb0fb30-21a0-11f1-b567-01c4072ece50",
+				"layer": "Spikes",
+				"x": 1544,
+				"y": 424,
+				"width": 16,
+				"height": 16,
+				"color": 14120515,
+				"customFields" : {}
+			},
+			{
+				"id": "Spike",
+				"iid": "805a81a0-21a0-11f1-b567-ad59ca9c9f15",
+				"layer": "Spikes",
+				"x": 1624,
+				"y": 424,
+				"width": 16,
+				"height": 16,
+				"color": 14120515,
+				"customFields" : {}
+			}
+		]
+	}
+}
