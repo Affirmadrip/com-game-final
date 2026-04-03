@@ -519,10 +519,15 @@ public class Game1 : Game
             }
         }
 
-        // ghost
+        float cullDistanceSq = 1000f * 1000f;
+
+        // ── Ghost ────────────────────────────────────────────────────────
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
             Enemy enemy = enemies[i];
+            if (Vector2.DistanceSquared(player.Position, enemy.Position) > cullDistanceSq)
+                continue;
+
             enemy.Update(gameTime, stage);
 
             if (player.Bounds.Intersects(enemy.Bounds))
@@ -531,7 +536,9 @@ public class Game1 : Game
                 {
                     if (!enemy.IsPhaseOut)
                     {
-                        enemies.RemoveAt(i);
+                        enemies[i] = enemies[enemies.Count - 1];
+                        enemies.RemoveAt(enemies.Count - 1);
+
                         player.OnEnemyContact();
                         continue;
                     }
@@ -551,17 +558,23 @@ public class Game1 : Game
                 }
             }
         }
-        // lizard
+
+        // ── Lizard ───────────────────────────────────────────────────────
         for (int i = lizards.Count - 1; i >= 0; i--)
         {
             var liz = lizards[i];
+            if (Vector2.DistanceSquared(player.Position, liz.Position) > cullDistanceSq)
+                continue;
+
             liz.Update(gameTime, stage, player.Position);
 
             if (player.Bounds.Intersects(liz.Bounds) || liz.IsHittingPlayer(player.Bounds))
             {
                 if (player.getDashingState)
                 {
-                    lizards.RemoveAt(i);
+                    lizards[i] = lizards[lizards.Count - 1];
+                    lizards.RemoveAt(lizards.Count - 1);
+
                     player.OnEnemyContact();
                     continue;
                 }
@@ -580,17 +593,23 @@ public class Game1 : Game
                 }
             }
         }
-        // bat
+
+        // ── Bat ──────────────────────────────────────────────────────────
         for (int i = bats.Count - 1; i >= 0; i--)
         {
             var bat = bats[i];
+            if (Vector2.DistanceSquared(player.Position, bat.Position) > cullDistanceSq)
+                continue;
+
             bat.Update(gameTime, player.Position);
 
             if (player.Bounds.Intersects(bat.Bounds))
             {
                 if (player.getDashingState)
                 {
-                    bats.RemoveAt(i);
+                    bats[i] = bats[bats.Count - 1];
+                    bats.RemoveAt(bats.Count - 1);
+
                     player.OnEnemyContact();
                     continue;
                 }

@@ -190,6 +190,19 @@
 				"customFields": {
 					"MonsterType": "Lizard"
 				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "48a9f380-21a0-11f1-a687-07e5e221365d",
+				"layer": "Enemy",
+				"x": 240,
+				"y": 1584,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
 			}
 		],
 		"Skills": [

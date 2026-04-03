@@ -337,19 +337,6 @@
 				}
 			}
 		],
-		"PlayerStart": [
-			{
-				"id": "PlayerStart",
-				"iid": "f13d9be0-21a0-11f1-a687-ff1a5ab6d516",
-				"layer": "Enemy",
-				"x": 1712,
-				"y": 3296,
-				"width": 16,
-				"height": 16,
-				"color": 12470831,
-				"customFields" : {}
-			}
-		],
 		"Star": [
 			{
 				"id": "Star",
@@ -375,6 +362,19 @@
 				"color": 9953535,
 				"customFields": {
 					"Checkpoint": "3"
+				}
+			},
+			{
+				"id": "Star",
+				"iid": "1f7b5940-21a0-11f1-a687-47e0aa463f6d",
+				"layer": "Objective",
+				"x": 1280,
+				"y": 2160,
+				"width": 16,
+				"height": 16,
+				"color": 9953535,
+				"customFields": {
+					"Checkpoint": "5"
 				}
 			}
 		],

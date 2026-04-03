@@ -70,6 +70,19 @@
 				"color": 14120515,
 				"customFields" : {}
 			}
+		],
+		"PlayerStart": [
+			{
+				"id": "PlayerStart",
+				"iid": "f13d9be0-21a0-11f1-a687-ff1a5ab6d516",
+				"layer": "PlayerStart",
+				"x": 240,
+				"y": 368,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields" : {}
+			}
 		]
 	}
 }
