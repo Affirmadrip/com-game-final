@@ -15,15 +15,11 @@ namespace GalactaJumperMo.Classes
         private enum LizardState { Walking, Attacking }
         private LizardState currentState = LizardState.Walking;
 
-        // Hitbox body
-        public Rectangle Bounds => direction > 0
-            ? new Rectangle((int)Position.X + 0, (int)Position.Y - 12, 6, 12)
-            : new Rectangle((int)Position.X + 20, (int)Position.Y - 12, 6, 12);
+        public Rectangle Bounds => new Rectangle((int)Position.X + 6, (int)Position.Y - 16, 20, 16);
 
-        // Hitbox tongue
         public Rectangle TongueBounds => direction > 0
-            ? new Rectangle((int)Position.X + 0, (int)Position.Y - 14, 20, 8)
-            : new Rectangle((int)Position.X - 0, (int)Position.Y - 14, 20, 8);
+            ? new Rectangle((int)Position.X + 26, (int)Position.Y - 14, 20, 8)
+            : new Rectangle((int)Position.X - 14, (int)Position.Y - 14, 20, 8);
 
         private int animFrame;
         private float animTimer;
@@ -76,7 +72,9 @@ namespace GalactaJumperMo.Classes
             velocity.X = speed * direction;
             Position.X += velocity.X * dt;
 
-            Rectangle boundsX = new Rectangle((int)Position.X + 0, (int)Position.Y - 12, 10, 12);
+            int bxX = direction > 0 ? (int)Position.X + 24 : (int)Position.X + 0;
+            Rectangle boundsX = new Rectangle(bxX, (int)Position.Y - 12, 8, 12);
+
             bool hitWall = false;
             foreach (Rectangle platform in stage.Platforms)
             {
@@ -96,14 +94,14 @@ namespace GalactaJumperMo.Classes
             velocity.Y += gravity * dt;
             Position.Y += velocity.Y * dt;
 
-            Rectangle boundsY = new Rectangle((int)Position.X + 11, (int)Position.Y - 12, 10, 12);
+            Rectangle boundsY = new Rectangle((int)Position.X + 8, (int)Position.Y - 12, 16, 12);
             bool isOnGround = false;
 
             foreach (Rectangle platform in stage.Platforms)
             {
                 if (boundsY.Intersects(platform))
                 {
-                    if (velocity.Y > 0)
+                    if (velocity.Y > 0 && (Position.Y - velocity.Y * dt) <= platform.Top + 10)
                     {
                         Position.Y = platform.Top;
                         velocity.Y = 0;
@@ -115,18 +113,19 @@ namespace GalactaJumperMo.Classes
 
             if (isOnGround)
             {
-                int checkX = direction > 0 ? (int)Position.X + 25 : (int)Position.X + 5;
-                Point checkPoint = new Point(checkX, (int)Position.Y + 2);
+                int checkX = direction > 0 ? (int)Position.X + 32 : (int)Position.X - 2;
+                Rectangle holeCheck = new Rectangle(checkX, (int)Position.Y, 2, 4);
 
                 bool holeAhead = true;
                 foreach (Rectangle platform in stage.Platforms)
                 {
-                    if (platform.Contains(checkPoint))
+                    if (holeCheck.Intersects(platform))
                     {
                         holeAhead = false;
                         break;
                     }
                 }
+
                 if (holeAhead)
                 {
                     direction *= -1;
@@ -150,14 +149,13 @@ namespace GalactaJumperMo.Classes
 
         private void UpdateAttacking(float dt)
         {
-            velocity.X = 0; 
+            velocity.X = 0;
         }
 
         public void Draw(SpriteBatch sb, Texture2D walkTex, Texture2D tongueTex)
         {
             Texture2D currentTex = (currentState == LizardState.Walking) ? walkTex : tongueTex;
             int maxFrames = (currentState == LizardState.Walking) ? 6 : 5;
-
 
             int frameWidth = currentTex.Width / maxFrames;
             int frameHeight = currentTex.Height;
@@ -169,7 +167,6 @@ namespace GalactaJumperMo.Classes
 
             SpriteEffects flip = direction < 0 ? SpriteEffects.FlipHorizontally : SpriteEffects.None;
             sb.Draw(currentTex, drawPos, sourceRect, Color.White, 0f, origin, 1.0f, flip, 0f);
-
         }
 
         public bool IsHittingPlayer(Rectangle playerBounds)

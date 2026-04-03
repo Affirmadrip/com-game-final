@@ -32,6 +32,19 @@
 				"customFields": {
 					"Title": "Shift to dash"
 				}
+			},
+			{
+				"id": "Titles",
+				"iid": "f3098470-21a0-11f1-a687-e76c39d16358",
+				"layer": "Titles",
+				"x": 2064,
+				"y": 1184,
+				"width": 16,
+				"height": 16,
+				"color": 4098376,
+				"customFields": {
+					"Title": "\"Dash to kill\""
+				}
 			}
 		],
 		"Enemy": [

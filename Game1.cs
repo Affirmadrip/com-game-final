@@ -906,6 +906,10 @@ public class Game1 : Game
         foreach (var title in stage.Titles)
             title.Draw(_spriteBatch, _menuFont);
 
+        // Draw Goal
+        foreach (var goal in stage.Goals)
+            goal.Draw(_spriteBatch, tilemap);
+
         // moving platform debug
         // foreach (var mp in stage.MovingPlatforms)
         //     _spriteBatch.Draw(pixel, mp.Bounds, Color.Blue * 0.4f);
@@ -1096,10 +1100,14 @@ public class Game1 : Game
 
         player.ResetVelocity();
 
-        if (loadFromSave && _currentSave != null)
+        if ((loadFromSave || retryFromCheckpoint) && _currentSave != null)
+        {
             elapsedTime = _currentSave.ElapsedTime;
+        }
         else
+        {
             elapsedTime = 0f;
+        }
 
         currentHealth = maxHealth;
 

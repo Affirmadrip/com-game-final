@@ -514,7 +514,22 @@ namespace GalactaJumperMo.Classes
                                     entity.Px.Y + levelOffsetY
                                 );
 
-                                Goals.Add(new Goal(position));
+                                Rectangle tileSource = Rectangle.Empty;
+                                if (entity._Tile != null)
+                                {
+                                    tileSource = new Rectangle(
+                                        entity._Tile.X,
+                                        entity._Tile.Y,
+                                        entity._Tile.W,
+                                        entity._Tile.H
+                                    );
+                                }
+                                else if (!TryGetEntityDefaultTileSource("Goal", out tileSource))
+                                {
+                                    tileSource = new Rectangle(0, 0, Math.Max(1, entity.Width), Math.Max(1, entity.Height));
+                                }
+
+                                Goals.Add(new Goal(position, tileSource));
                             }
                         }
                     }

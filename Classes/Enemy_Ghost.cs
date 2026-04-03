@@ -42,7 +42,7 @@ namespace GalactaJumperMo.Classes
 
         public void Update(GameTime gameTime, Stage stage)
         {
-            if (IsDead) return; 
+            if (IsDead) return;
 
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -51,30 +51,24 @@ namespace GalactaJumperMo.Classes
             float lerpFactor = (float)(Math.Cos(alphaTimer) + 1f) / 2f;
             alpha = MathHelper.Lerp(minAlpha, 1.0f, lerpFactor);
 
-            //  Sine Wave
+            // Sine Wave
             basePosition.X += speed * direction * dt;
 
-            if (basePosition.X > startX + patrolRange) { direction = -1; basePosition.X = startX + patrolRange; }
-            else if (basePosition.X < startX - patrolRange) { direction = 1; basePosition.X = startX - patrolRange; }
+            if (basePosition.X > startX + patrolRange)
+            {
+                direction = -1;
+                basePosition.X = startX + patrolRange;
+            }
+            else if (basePosition.X < startX - patrolRange)
+            {
+                direction = 1;
+                basePosition.X = startX - patrolRange;
+            }
 
             sineTimer += dt * waveSpeed;
             Position.X = basePosition.X;
             Position.Y = basePosition.Y + (float)Math.Sin(sineTimer) * waveAmplitude;
 
-            foreach (Rectangle platform in stage.Platforms)
-            {
-                if (Bounds.Intersects(platform))
-                {
-                    if (Position.Y + 28 > platform.Top && Position.Y < platform.Top)
-                        basePosition.Y = platform.Top - 30 - waveAmplitude;
-                    else
-                    {
-                        direction *= -1;
-                        basePosition.X += direction * 5;
-                    }
-                    break;
-                }
-            }
 
             // Animation
             animTimer += dt;
@@ -89,7 +83,7 @@ namespace GalactaJumperMo.Classes
         {
             if (IsDead || texture == null) return;
 
-            //  IsPhaseOut 
+            // IsPhaseOut 
             Color tintColor = IsPhaseOut ? Color.LightBlue * alpha : Color.White * alpha;
 
             int frameWidth = texture.Width / 6;
