@@ -194,6 +194,19 @@
 				"customFields": {
 					"MonsterType": "Ghost"
 				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "91dbd4a0-21a0-11f1-a687-1d345070ef3a",
+				"layer": "Enemy",
+				"x": 1456,
+				"y": 4448,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
 			}
 		],
 		"Skills": [
@@ -612,19 +625,6 @@
 				"width": 16,
 				"height": 16,
 				"color": 14120515,
-				"customFields" : {}
-			}
-		],
-		"PlayerStart": [
-			{
-				"id": "PlayerStart",
-				"iid": "2917dbb0-21a0-11f1-8166-5f519664fe90",
-				"layer": "PlayerStart",
-				"x": 176,
-				"y": 4048,
-				"width": 16,
-				"height": 16,
-				"color": 12470831,
 				"customFields" : {}
 			}
 		]

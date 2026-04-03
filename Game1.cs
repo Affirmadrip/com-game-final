@@ -891,25 +891,38 @@ public class Game1 : Game
         // foreach (var mp in stage.MovingPlatforms)
         //     _spriteBatch.Draw(pixel, mp.Bounds, Color.Blue * 0.4f);
 
-        // ghost
+        Rectangle cameraCullBounds = new Rectangle(
+            (int)MathF.Floor(currentCameraX) - 100,
+            (int)MathF.Floor(currentCameraY) - 100,
+             (int)(GraphicsDevice.Viewport.Width / WorldZoom) + 200,
+             (int)(GraphicsDevice.Viewport.Height / WorldZoom) + 200
+        );
 
+        // ghost
         foreach (Enemy enemy in enemies)
-            enemy.Draw(_spriteBatch, ghostTexture);
+        {
+            if (cameraCullBounds.Intersects(enemy.Bounds))
+                enemy.Draw(_spriteBatch, ghostTexture);
+        }
 
         // lizard
-
         foreach (var liz in lizards)
-            liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
+        {
+            if (cameraCullBounds.Intersects(liz.Bounds))
+                liz.Draw(_spriteBatch, lizardWalkTex, lizardTongueTex);
+        }
 
         // bat
-
         foreach (var bat in bats)
-            bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
+        {
+            if (cameraCullBounds.Intersects(bat.Bounds))
+                bat.Draw(_spriteBatch, batIdleTex, batAtkTex);
+        }
 
         // draw star
         foreach (var star in stars)
         {
-            star.Draw(_spriteBatch, tilemap);
+            star.Draw(_spriteBatch, starTexture);
         }
 
         if (player.Visible)

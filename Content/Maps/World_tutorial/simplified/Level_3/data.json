@@ -23,6 +23,361 @@
 		"Tiles.png"
 	],
 	"entities": {
+		"Enemy": [
+			{
+				"id": "Enemy",
+				"iid": "f54078c0-21a0-11f1-a687-afa66d8ed3b3",
+				"layer": "Enemy",
+				"x": 272,
+				"y": 3296,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "07658d60-21a0-11f1-a687-b14f1bbd7ec0",
+				"layer": "Enemy",
+				"x": 640,
+				"y": 3984,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "24e68010-21a0-11f1-a687-1915e4e5bd22",
+				"layer": "Enemy",
+				"x": 2128,
+				"y": 3920,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "37b80150-21a0-11f1-a687-41406bf6abb0",
+				"layer": "Enemy",
+				"x": 2688,
+				"y": 3552,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "4f40a200-21a0-11f1-a687-b12f694c24d9",
+				"layer": "Enemy",
+				"x": 3552,
+				"y": 3760,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "f583f4f0-21a0-11f1-a687-3b21ebce07a4",
+				"layer": "Enemy",
+				"x": 1312,
+				"y": 3888,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "0f6e0540-21a0-11f1-a687-71e5575624ce",
+				"layer": "Enemy",
+				"x": 1712,
+				"y": 3504,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "1f1a0390-21a0-11f1-a687-dff2dfc84a85",
+				"layer": "Enemy",
+				"x": 2672,
+				"y": 3920,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "855435e0-21a0-11f1-a687-d732db092b1c",
+				"layer": "Enemy",
+				"x": 3632,
+				"y": 2336,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "9a6ce800-21a0-11f1-a687-271f44ee3219",
+				"layer": "Enemy",
+				"x": 3024,
+				"y": 2000,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "b6e125a0-21a0-11f1-a687-c1f0b82f9f87",
+				"layer": "Enemy",
+				"x": 3216,
+				"y": 2288,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "ce30b4f0-21a0-11f1-a687-930bb9116f3c",
+				"layer": "Enemy",
+				"x": 2416,
+				"y": 2288,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "d45b3a80-21a0-11f1-a687-577bc80b78b2",
+				"layer": "Enemy",
+				"x": 2832,
+				"y": 2400,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "d8969a40-21a0-11f1-a687-bdfa2003796b",
+				"layer": "Enemy",
+				"x": 1872,
+				"y": 2384,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "efb7eda0-21a0-11f1-a687-79984aa56177",
+				"layer": "Enemy",
+				"x": 2512,
+				"y": 2656,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "f48924c0-21a0-11f1-a687-3d12f149f4b5",
+				"layer": "Enemy",
+				"x": 2768,
+				"y": 3264,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "4c83e110-21a0-11f1-a687-89284021e425",
+				"layer": "Enemy",
+				"x": 1472,
+				"y": 2848,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "737312a0-21a0-11f1-a687-1fc2e2e16223",
+				"layer": "Enemy",
+				"x": 576,
+				"y": 2464,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "99464ce0-21a0-11f1-a687-0de4da1ec213",
+				"layer": "Enemy",
+				"x": 1696,
+				"y": 1696,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "ab00dfe0-21a0-11f1-a687-131c122d1e83",
+				"layer": "Enemy",
+				"x": 2272,
+				"y": 1616,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "b3cdfcc0-21a0-11f1-a687-29fa7200d9c5",
+				"layer": "Enemy",
+				"x": 1136,
+				"y": 1616,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Ghost"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "c31dd150-21a0-11f1-a687-ffb98f2c2b52",
+				"layer": "Enemy",
+				"x": 2128,
+				"y": 1232,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Bat"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "d31fb7d0-21a0-11f1-a687-1b2b3283a7fa",
+				"layer": "Enemy",
+				"x": 2672,
+				"y": 928,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			},
+			{
+				"id": "Enemy",
+				"iid": "d7a73bc0-21a0-11f1-a687-c938c5751e4f",
+				"layer": "Enemy",
+				"x": 3248,
+				"y": 928,
+				"width": 16,
+				"height": 16,
+				"color": 16520704,
+				"customFields": {
+					"MonsterType": "Lizard"
+				}
+			}
+		],
+		"PlayerStart": [
+			{
+				"id": "PlayerStart",
+				"iid": "f13d9be0-21a0-11f1-a687-ff1a5ab6d516",
+				"layer": "Enemy",
+				"x": 1712,
+				"y": 3296,
+				"width": 16,
+				"height": 16,
+				"color": 12470831,
+				"customFields" : {}
+			}
+		],
+		"Star": [
+			{
+				"id": "Star",
+				"iid": "5fdf9660-21a0-11f1-a687-a956f79564c8",
+				"layer": "Objective",
+				"x": 3248,
+				"y": 2896,
+				"width": 16,
+				"height": 16,
+				"color": 9953535,
+				"customFields": {
+					"Checkpoint": "2"
+				}
+			},
+			{
+				"id": "Star",
+				"iid": "170544c0-21a0-11f1-a687-d1246d78190b",
+				"layer": "Objective",
+				"x": 608,
+				"y": 2800,
+				"width": 16,
+				"height": 16,
+				"color": 9953535,
+				"customFields": {
+					"Checkpoint": "3"
+				}
+			}
+		],
 		"MovingPlatform": [
 			{
 				"id": "MovingPlatform",
