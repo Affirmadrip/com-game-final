@@ -950,7 +950,7 @@ public class Game1 : Game
 
         if (player.Visible)
         {
-            Vector2 drawPos = new Vector2(player.Bounds.Center.X, player.Bounds.Center.Y);
+            Vector2 drawPos = player.DrawCenter;
             Vector2 origin = new Vector2(16, 16);
 
             if (player.getDashingState)

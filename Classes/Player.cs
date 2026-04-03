@@ -4,14 +4,13 @@ using System;
 
 namespace GalactaJumperMo.Classes
 {
-
-
     public class Player
     {
         public Vector2 Position;
         private Vector2 velocity;
-        public Vector2 Velocity => velocity; // Expose velocity for external checks
+        public Vector2 Velocity => velocity;
 
+        // Core Physics - Updated values from new code
         private float speed = 180f;
         private float jumpForce = -330f;
         private float gravity = 1000f;
@@ -20,28 +19,33 @@ namespace GalactaJumperMo.Classes
         public bool JustJumped { get; private set; }
         public bool JustDashed { get; private set; }
 
-        // animation management
+        // Animation management
         private int animRow;
         private int animFrame;
         private float animTimer;
-        private float[] frameDurations = { 0.35f, 0.1f, 0.18f, 0.25f, 0.1f, 0.2f }; 
+        private float[] frameDurations = { 0.35f, 0.1f, 0.18f, 0.25f, 0.1f, 0.2f };
         private int[] frameCounts = { 2, 6, 3, 2, 5, 1 };
         public bool FacingLeft { get; private set; }
         public Rectangle SourceRect => new Rectangle(animFrame * 32, animRow * 32, 32, 32);
-        
+
         // Smaller hitbox for better collision (centered in the 32x32 sprite)
         private const int HitboxWidth = 16;
         private const int HitboxHeight = 24;
-        private const int HitboxOffsetX = 8;  // (32 - 16) / 2
-        private const int HitboxOffsetY = 8;  // offset from top
-        
+        private const int HitboxOffsetX = 8;
+        private const int HitboxOffsetY = 8;
+
         public Rectangle Bounds =>
             new Rectangle(
-                (int)Position.X + HitboxOffsetX, 
-                (int)Position.Y + HitboxOffsetY, 
-                HitboxWidth, 
+                (int)Position.X + HitboxOffsetX,
+                (int)Position.Y + HitboxOffsetY,
+                HitboxWidth,
                 HitboxHeight
             );
+
+        public Vector2 DrawCenter =>
+            isOnWall
+                ? new Vector2(Bounds.Center.X - wallSide * HitboxOffsetX, Bounds.Center.Y)
+                : new Vector2(Bounds.Center.X, Bounds.Center.Y);
 
         // Health System
         public bool IsInvincible => invincibilityTimer > 0f;
@@ -64,8 +68,10 @@ namespace GalactaJumperMo.Classes
 
         private bool justWallJumped { get; set; }
         private bool isOnWall = false;
-        private int wallSide = 0; // -1 == left wall, +1 == right wall
-        
+        private int wallSide = 0;
+        private int touchingWallSide = 0;
+        private float touchingWallTimer = 0f;
+
         // Ability unlock system
         public bool CanWallJump { get; private set; } = false;
         public bool CanDash { get; private set; } = false;
@@ -75,12 +81,11 @@ namespace GalactaJumperMo.Classes
         private float dropThroughTimer = 0f;
         private const float DropThroughDuration = 0.3f;
 
-        /// Unlock wall jump ability for the player
         public void UnlockWallJump()
         {
             CanWallJump = true;
         }
-        /// Unlock dash ability for the player
+
         public void UnlockDash()
         {
             CanDash = true;
@@ -91,7 +96,10 @@ namespace GalactaJumperMo.Classes
             justWallJumped = false;
             JustJumped = false;
             JustDashed = false;
+            bool wasOnWall = isOnWall;
+            isOnWall = false;
             float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            touchingWallTimer -= dt;
             KeyboardState k = Keyboard.GetState();
             KeyboardState currentKeyboard = Keyboard.GetState();
 
@@ -132,26 +140,14 @@ namespace GalactaJumperMo.Classes
                 dashCooldownTimer = dashCooldown;
             }
 
-            if (!isDashing && !isOnWall)
+            if (!isDashing && !wasOnWall)
             {
                 float targetSpeed = 0f;
                 if (k.IsKeyDown(Keys.A))
                     targetSpeed = -speed;
                 else if (k.IsKeyDown(Keys.D))
                     targetSpeed = speed;
-
-                // Determine how fast to change speed (acceleration vs deceleration, ground vs air)
-                float moveChange = 0f;
-                if (targetSpeed != 0)
-                    moveChange = (isOnGround ? 1800f : 1000f) * dt; // Accelerate
-                else
-                    moveChange = (isOnGround ? 2500f : 800f) * dt;  // Decelerate
-
-                // Move current velocity towards targetSpeed
-                if (velocity.X < targetSpeed)
-                    velocity.X = Math.Min(velocity.X + moveChange, targetSpeed);
-                else if (velocity.X > targetSpeed)
-                    velocity.X = Math.Max(velocity.X - moveChange, targetSpeed);
+                velocity.X = targetSpeed;
 
                 if (k.IsKeyDown(Keys.Space) && isOnGround)
                 {
@@ -160,23 +156,25 @@ namespace GalactaJumperMo.Classes
                     JustJumped = true;
                 }
             }
-            else if (!isDashing && isOnWall)
+            else if (!isDashing && wasOnWall)
             {
-                bool pressingAway = (wallSide == 1 && k.IsKeyDown(Keys.A)) || (wallSide == -1 && k.IsKeyDown(Keys.D));
-                if (pressingAway)
-                    velocity.X = wallSide == 1 ? -speed : speed;
-                else
-                    velocity.X = 0f;
+                velocity.X = wallSide * 40f;
+            }
 
-                bool spaceJustPressed = currentKeyboard.IsKeyDown(Keys.Space) && !prevKeyboard.IsKeyDown(Keys.Space);
-                if (spaceJustPressed)
-                {
-                    velocity.Y = jumpForce;
-                    velocity.X = -wallSide * speed * 1.2f;
-                    dashCooldownTimer = 0f;
-                    justWallJumped = true;
-                    isOnWall = false;
-                }
+            bool spaceJustPressed = currentKeyboard.IsKeyDown(Keys.Space) && !prevKeyboard.IsKeyDown(Keys.Space);
+            if (spaceJustPressed && touchingWallTimer > 0f && !wasOnWall && !isOnGround && CanWallJump)
+            {
+                isOnWall = true;
+                wallSide = touchingWallSide;
+                velocity = Vector2.Zero;
+            }
+            if (wasOnWall && spaceJustPressed)
+            {
+                isOnWall = false;
+                velocity.X = -wallSide * speed;
+                velocity.Y = jumpForce;
+                dashCooldownTimer = 0f;
+                justWallJumped = true;
             }
             prevKeyboard = currentKeyboard;
 
@@ -191,21 +189,23 @@ namespace GalactaJumperMo.Classes
                 }
             }
 
-            if (!isDashing && !isOnWall)
+            if (!isDashing && !wasOnWall)
                 velocity.Y += gravity * dt;
-            else if (isOnWall && !justWallJumped)
+            else if (wasOnWall && !justWallJumped)
+            {
+                if (velocity.Y < 0) velocity.Y = 0f;
                 velocity.Y = 0f;
+            }
 
             isOnGround = false;
-            isOnWall = false;
 
             float moveY = velocity.Y * dt;
             float moveX = velocity.X * dt;
 
+            // Vertical collision with drop-through support
             if (moveY != 0)
             {
                 float newY = Position.Y + moveY;
-                
                 int boxY = (velocity.Y > 0) ? (int)MathF.Ceiling(newY) : (int)MathF.Floor(newY);
 
                 Rectangle testBounds = new Rectangle(
@@ -222,7 +222,6 @@ namespace GalactaJumperMo.Classes
                     {
                         if (testBounds.Intersects(girder))
                         {
-                            // Only collide if coming from above
                             if (Position.Y + HitboxOffsetY + HitboxHeight <= girder.Top + 4)
                             {
                                 newY = girder.Top - HitboxHeight - HitboxOffsetY;
@@ -243,6 +242,8 @@ namespace GalactaJumperMo.Classes
                         {
                             newY = platform.Top - HitboxHeight - HitboxOffsetY;
                             isOnGround = true;
+                            isOnWall = false;
+                            touchingWallTimer = 0f;
                         }
                         else if (velocity.Y < 0)
                             newY = platform.Bottom - HitboxOffsetY;
@@ -253,13 +254,12 @@ namespace GalactaJumperMo.Classes
                 Position.Y = newY;
             }
 
+            // Horizontal collision with wall jump platform detection
             if (moveX != 0)
             {
                 float newX = Position.X + moveX;
-                
-                // Fix for right-wall jitter: Use Ceiling when moving right, Floor when moving left.
                 int boxX = (velocity.X > 0) ? (int)MathF.Ceiling(newX) : (int)MathF.Floor(newX);
-                
+
                 Rectangle testBounds = new Rectangle(
                     boxX + HitboxOffsetX,
                     (int)MathF.Round(Position.Y) + HitboxOffsetY,
@@ -282,7 +282,6 @@ namespace GalactaJumperMo.Classes
                 {
                     Rectangle platform = collidedPlatform.Value;
 
-                    // Check if this platform is a wall_jump platform
                     bool isWallJumpPlatform = false;
                     foreach (Rectangle wjp in stage.WallJumpPlatforms)
                     {
@@ -296,23 +295,21 @@ namespace GalactaJumperMo.Classes
                     if (velocity.X > 0)
                     {
                         newX = platform.Left - HitboxWidth - HitboxOffsetX;
-                        // Only enable wall slide/jump on wall_jump platforms if ability is unlocked
-                        if (!justWallJumped && !isOnGround && isWallJumpPlatform && CanWallJump)
+                        if (!justWallJumped && isWallJumpPlatform && CanWallJump)
                         {
-                            isOnWall = true;
-                            wallSide = 1;
-                            dashCooldownTimer = 0f;
+                            touchingWallSide = 1;
+                            touchingWallTimer = 0.15f;
+                            if (wasOnWall) { isOnWall = true; wallSide = 1; }
                         }
                     }
                     else if (velocity.X < 0)
                     {
                         newX = platform.Right - HitboxOffsetX;
-                        // Only enable wall slide/jump on wall_jump platforms if ability is unlocked
-                        if (!justWallJumped && !isOnGround && isWallJumpPlatform && CanWallJump)
+                        if (!justWallJumped && isWallJumpPlatform && CanWallJump)
                         {
-                            isOnWall = true;
-                            wallSide = -1;
-                            dashCooldownTimer = 0f;
+                            touchingWallSide = -1;
+                            touchingWallTimer = 0.15f;
+                            if (wasOnWall) { isOnWall = true; wallSide = -1; }
                         }
                     }
                     velocity.X = 0;
@@ -326,32 +323,22 @@ namespace GalactaJumperMo.Classes
                 Position.X = newX;
             }
 
-            // animation updates
+            // Animation updates
             int newRow;
             if (isDashing)
-            {
                 newRow = 4;
-            }
             else if (!isOnGround && velocity.Y < 0)
-            {
                 newRow = 2;
-            }
             else if (!isOnGround && velocity.Y > 80f)
-            {
                 newRow = 3;
-            }
             else if (isOnGround && (velocity.X > 10f || velocity.X < -10f))
-            {
                 newRow = 1;
-            }
             else if (isOnGround && velocity.X == 0)
-            {
                 newRow = 0;
-            }
+            else if (isOnWall)
+                newRow = 5;
             else
-            {
                 newRow = animRow;
-            }
 
             if (newRow != animRow)
             {
@@ -401,6 +388,7 @@ namespace GalactaJumperMo.Classes
             isOnGround = false;
             isDashing = false;
         }
+
         public void ResetVelocity()
         {
             velocity = Vector2.Zero;
